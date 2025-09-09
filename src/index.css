@@ -74,3 +74,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .prose-user-message {
+    --tw-prose-body: theme('colors.white');
+    --tw-prose-headings: theme('colors.white');
+    --tw-prose-lead: theme('colors.white');
+    --tw-prose-links: theme('colors.white');
+    --tw-prose-bold: theme('colors.white');
+    --tw-prose-counters: theme('colors.white');
+    --tw-prose-bullets: theme('colors.white');
+    --tw-prose-hr: theme('colors.gray.300');
+    --tw-prose-quotes: theme('colors.white');
+    --tw-prose-quote-borders: theme('colors.gray.300');
+    --tw-prose-captions: theme('colors.gray.400');
+    --tw-prose-code: theme('colors.white');
+    --tw-prose-pre-code: theme('colors.gray.300');
+    --tw-prose-pre-bg: theme('colors.gray.900');
+    --tw-prose-th-borders: theme('colors.gray.400');
+    --tw-prose-td-borders: theme('colors.gray.300');
+  }
+}

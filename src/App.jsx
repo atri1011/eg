@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
-import { Send, Settings, Trash2, MessageCircle, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { Send, Settings, Trash2, MessageCircle, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff, Sparkles, Languages, Plus } from 'lucide-react'
 
 function App() {
   const [messages, setMessages] = useState([])
@@ -33,6 +34,9 @@ function App() {
   const [grammarCorrections, setGrammarCorrections] = useState([])
   const [showTranslations, setShowTranslations] = useState({})
   const messagesEndRef = useRef(null)
+  const [conversations, setConversations] = useState([])
+  const [activeConversationId, setActiveConversationId] = useState(null)
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -48,11 +52,7 @@ function App() {
     if (savedConfig) {
       setConfig(JSON.parse(savedConfig))
     }
-    
-    const savedMessages = localStorage.getItem('aiEnglishMessages')
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages))
-    }
+    fetchConversations()
   }, [])
 
   // 获取可用模型列表
@@ -111,6 +111,64 @@ function App() {
     }))
   }
 
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch('/api/conversations');
+      const data = await response.json();
+      if (response.ok) {
+        setConversations(data);
+        if (data.length > 0 && !activeConversationId) {
+          handleSwitchConversation(data.id);
+        }
+      } else {
+        console.error('Failed to fetch conversations:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
+  const handleNewConversation = async () => {
+    try {
+      const response = await fetch('/api/conversations', { method: 'POST' });
+      const newConversation = await response.json();
+      if (response.ok) {
+        setMessages([]);
+        setActiveConversationId(newConversation.id);
+        fetchConversations(); // Refresh list
+      } else {
+        console.error('Failed to create new conversation:', newConversation.error);
+      }
+    } catch (error) {
+      console.error('Error creating new conversation:', error);
+    }
+  };
+
+  const handleSwitchConversation = async (conversationId) => {
+    setActiveConversationId(conversationId);
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}`);
+      const data = await response.json();
+      if (response.ok) {
+        const formattedMessages = data.messages.map(msg => ({
+          id: msg.id,
+          type: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp).toLocaleTimeString(),
+          corrections: msg.corrections || [],
+          ...(msg.role === 'ai' && parseAIResponse(msg.content))
+        }));
+        setMessages(formattedMessages);
+      } else {
+        console.error('Failed to fetch messages for conversation:', data.error);
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setMessages([]);
+    }
+  };
+
   // 发送消息
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -125,11 +183,10 @@ function App() {
       type: 'user',
       content: inputText,
       timestamp: new Date().toLocaleTimeString(),
-      corrections: [] // 初始化纠错为空数组
+      corrections: []
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
 
@@ -143,6 +200,7 @@ function App() {
         },
         body: JSON.stringify({
           message: inputText,
+          conversation_id: activeConversationId,
           config: {
             ...config,
             model: modelToUse
@@ -162,20 +220,14 @@ function App() {
           translation: chinese,
           timestamp: new Date().toLocaleTimeString()
         };
-
-        // 使用函数式更新来确保状态正确更新
+        
         setMessages(currentMessages => {
-          // 创建一个新数组，更新特定用户消息的纠错信息
-          const updatedMessages = currentMessages.map(msg => {
-            if (msg.id === userMessage.id && data.grammar_corrections && data.grammar_corrections.length > 0) {
-              return { ...msg, corrections: data.grammar_corrections };
-            }
-            return msg;
-          });
-          
-          const finalMessages = [...updatedMessages, aiMessage];
-          localStorage.setItem('aiEnglishMessages', JSON.stringify(finalMessages));
-          return finalMessages;
+          const updatedMessages = currentMessages.map(msg =>
+            msg.id === userMessage.id && data.grammar_corrections
+              ? { ...msg, corrections: data.grammar_corrections }
+              : msg
+          );
+          return [...updatedMessages, aiMessage];
         });
 
       } else {
@@ -195,8 +247,7 @@ function App() {
         content: `网络错误: ${error.message}`,
         timestamp: new Date().toLocaleTimeString()
       };
-      const updatedMessages = [...newMessages, errorMessage];
-      setMessages(updatedMessages);
+      setMessages(currentMessages => [...currentMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -211,22 +262,36 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* 标题栏 */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <MessageCircle className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-800">AI英语学习助手</h1>
+    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Sidebar */}
+      <div className="w-64 bg-white/80 backdrop-blur-sm border-r border-gray-200 flex flex-col">
+        <div className="p-4 border-b border-gray-200">
+          <Button onClick={handleNewConversation} className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            新建对话
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-2 space-y-1">
+            {conversations.map((convo) => (
+              <Button
+                key={convo.id}
+                variant={activeConversationId === convo.id ? 'secondary' : 'ghost'}
+                className="w-full justify-start text-left h-auto"
+                onClick={() => handleSwitchConversation(convo.id)}
+              >
+                <div className="truncate">
+                  <p className="font-semibold">{convo.title || 'New Conversation'}</p>
+                  <p className="text-xs text-gray-500">{new Date(convo.created_at).toLocaleString()}</p>
+                </div>
+              </Button>
+            ))}
           </div>
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={clearMessages}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              清空对话
-            </Button>
-            <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+        </div>
+        <div className="p-4 border-t border-gray-200">
+        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="w-full">
                   <Settings className="w-4 h-4 mr-2" />
                   设置
                 </Button>
@@ -325,32 +390,40 @@ function App() {
                 </div>
               </DialogContent>
             </Dialog>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <MessageCircle className="w-8 h-8 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-800">AI英语学习助手</h1>
           </div>
         </div>
 
-        {/* 对话区域 */}
-        <Card className="mb-4 h-96 flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">对话历史</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto space-y-4">
+        <div className="flex-1 flex flex-col bg-white/50 rounded-xl shadow-md overflow-hidden">
+          {/* 对话区域 */}
+          <div className="flex-1 p-6 overflow-y-auto space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-8">
                 <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                 <p>开始你的英语学习之旅吧！</p>
-                <p className="text-sm mt-2">输入一个英语句子，AI会帮你纠正语法并进行对话</p>
+                <p className="text-sm mt-2">点击 "新建对话" 或选择一个已有对话开始</p>
               </div>
             ) : (
               messages.map((message) => (
                 <div key={message.id} className={`flex flex-col ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  <div className={`max-w-xs lg:max-w-xl px-4 py-2 rounded-lg ${
                     message.type === 'user'
                       ? 'bg-blue-600 text-white'
                       : message.type === 'error'
                       ? 'bg-red-100 text-red-800 border border-red-200'
                       : 'bg-white text-gray-800 border border-gray-200'
                   }`}>
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message' : ''}`}>
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
                     
                     {message.type === 'ai' && message.translation && (
                       <div className="mt-2 pt-2 border-t border-blue-500/50">
@@ -376,26 +449,52 @@ function App() {
                     <div className="text-xs opacity-70 mt-1">{message.timestamp}</div>
                   </div>
 
-                  {/* 语法纠错显示 */}
-                  {message.type === 'user' && message.corrections && message.corrections.length > 0 && (
-                    <div className="mt-2 max-w-xs lg:max-w-md w-full">
+                  {/* 优化与纠错显示 */}
+                  {message.type === 'user' && message.corrections && Object.keys(message.corrections).length > 0 && (
+                    <div className="mt-2 max-w-xs lg:max-w-xl w-full">
                       <div className="bg-white border border-gray-200 rounded-lg p-3">
-                        <div className="space-y-3">
-                          {message.corrections.map((correction, index) => (
-                            <div key={index}>
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div className="bg-red-50 p-2 rounded-md">
-                                  <span className="font-medium text-red-700">原文:</span>
-                                  <p className="mt-1 text-gray-700 line-through">{correction.original}</p>
-                                </div>
-                                <div className="bg-green-50 p-2 rounded-md">
-                                  <span className="font-medium text-green-700">建议:</span>
-                                  <p className="mt-1 text-gray-800">{correction.corrected}</p>
-                                </div>
-                              </div>
-                              <p className="text-xs mt-2 text-gray-500 px-1">{correction.explanation}</p>
+                        <div>
+                          <div className="flex items-center text-sm text-yellow-600 mb-2">
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            <span className="font-semibold">语法建议</span>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="bg-red-50 p-2 rounded-md">
+                              <span className="font-medium text-red-700">原文:</span>
+                              <p className="mt-1 text-gray-700">{message.corrections.original_sentence}</p>
                             </div>
-                          ))}
+                            <div className="bg-green-50 p-2 rounded-md">
+                              <span className="font-medium text-green-700">建议:</span>
+                              <p className="mt-1 text-gray-800">{message.corrections.corrected_sentence}</p>
+                            </div>
+                            {/* 渲染详细修正 */}
+                            {message.corrections.corrections && message.corrections.corrections.length > 0 && (
+                              <div className="border-t border-gray-200 mt-3 pt-3">
+                                {/* 先渲染语法修正 */}
+                                {message.corrections.corrections.filter(c => c.type !== 'translation').map((correction, index) => (
+                                  <div key={`correction-${index}`} className="flex items-start text-xs text-gray-600 mb-1">
+                                    <Badge variant="default" className="mr-2 capitalize text-white">
+                                      语法
+                                    </Badge>
+                                    <span className="line-through text-red-500">{correction.original}</span>
+                                    <span className="mx-1">→</span>
+                                    <span className="text-green-600 font-semibold">{correction.corrected}</span>
+                                  </div>
+                                ))}
+                                {/* 再渲染翻译 */}
+                                {message.corrections.corrections.filter(c => c.type === 'translation').map((correction, index) => (
+                                  <div key={`translation-${index}`} className="flex items-start text-xs text-gray-600 mb-1">
+                                    <Badge variant="default" className="mr-2 capitalize text-white">
+                                      翻译
+                                    </Badge>
+                                    <span className="line-through text-red-500">{correction.original}</span>
+                                    <span className="mx-1">→</span>
+                                    <span className="text-green-600 font-semibold">{correction.corrected}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -414,67 +513,26 @@ function App() {
               </div>
             )}
             <div ref={messagesEndRef} />
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* 输入区域 */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="space-y-2">
-              <div className="flex space-x-2">
-                <Textarea
-                  placeholder="输入你想练习的英语句子..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="flex-1 min-h-[60px] resize-none"
-                  disabled={isLoading}
-                />
-                <Button 
-                  onClick={sendMessage} 
-                  disabled={!inputText.trim() || isLoading}
-                  className="self-end"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {/* 语法纠错弹出框 */}
-              {grammarCorrections.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg">
-                  <div className="flex items-center mb-3">
-                    <Sparkles className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="font-medium text-gray-800">语法纠错：</span>
-                  </div>
-                  <div className="space-y-3">
-                    {grammarCorrections.map((correction, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="destructive" className="text-xs">错误</Badge>
-                          <span className="text-red-600 line-through">{correction.original}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="default" className="text-xs bg-green-600">正确</Badge>
-                          <span className="text-green-600 font-medium">{correction.corrected}</span>
-                        </div>
-                        {correction.explanation && (
-                          <div className="text-sm text-gray-600 ml-12">
-                            {correction.explanation}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setGrammarCorrections([])}
-                    className="mt-3 text-gray-500"
-                  >
-                    关闭
-                  </Button>
-                </div>
-              )}
+          {/* 输入区域 */}
+          <div className="p-4 border-t border-gray-200 bg-white/60">
+            <div className="flex space-x-2">
+              <Textarea
+                placeholder="输入你想练习的英语句子..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1 min-h-[60px] resize-none"
+                disabled={isLoading || !activeConversationId}
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={!inputText.trim() || isLoading || !activeConversationId}
+                className="self-end"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
             
             <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
@@ -492,15 +550,9 @@ function App() {
                   </Badge>
                 )}
                 <span>{config.customModel || config.model}</span>
-                <span>{config.languagePreference === 'bilingual' ? '双语' : config.languagePreference === 'chinese' ? '中文' : '英文'}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 页脚 */}
-        <div className="text-center text-sm text-gray-500 mt-4">
-          由 Manus 构建
+          </div>
         </div>
       </div>
     </div>

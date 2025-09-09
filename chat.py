@@ -3,6 +3,8 @@ from flask_cors import cross_origin
 import openai
 import re
 import json
+from src.models.user import db
+from src.models.conversation import Conversation, Message
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -12,14 +14,16 @@ def chat():
     """处理AI聊天请求"""
     try:
         data = request.json
-        message = data.get('message', '')
+        message_content = data.get('message', '')
         config = data.get('config', {})
+        conversation_id = data.get('conversation_id')
         
-        if not message.strip():
-            return jsonify({
-                'success': False,
-                'error': '消息不能为空'
-            }), 400
+        # 假设我们有一个固定的 user_id 用于测试
+        # 在实际应用中，这里应该从会话或Token中获取当前登录用户
+        user_id = 1
+
+        if not message_content.strip():
+            return jsonify({'success': False, 'error': '消息不能为空'}), 400
             
         api_key = config.get('apiKey', '')
         api_base = config.get('apiBase', 'https://api.openai.com/v1')
@@ -27,39 +31,56 @@ def chat():
         language_preference = config.get('languagePreference', 'bilingual')
         
         if not api_key:
-            return jsonify({
-                'success': False,
-                'error': '请配置API Key'
-            }), 400
+            return jsonify({'success': False, 'error': '请配置API Key'}), 400
         
-        # 配置OpenAI客户端
-        client = openai.OpenAI(
-            api_key=api_key,
-            base_url=api_base
-        )
+        client = openai.OpenAI(api_key=api_key, base_url=api_base)
         
-        # 构建系统提示
+        if conversation_id:
+            conversation = Conversation.query.get(conversation_id)
+            if not conversation or conversation.user_id != user_id:
+                return jsonify({'success': False, 'error': '对话不存在或无权访问'}), 404
+        else:
+            conversation = Conversation(user_id=user_id)
+            db.session.add(conversation)
+            db.session.flush() # 获取新对话的ID
+        
+        # 保存用户消息
+        user_message = Message(conversation_id=conversation.id, role='user', content=message_content)
+        db.session.add(user_message)
+        
+        # 构建历史消息
+        history = Message.query.filter_by(conversation_id=conversation.id).order_by(Message.created_at.asc()).all()
+        messages = [{"role": msg.role, "content": msg.content} for msg in history]
+        
         system_prompt = build_system_prompt(language_preference)
+        messages.insert(0, {"role": "system", "content": system_prompt})
         
-        # 调用AI API
         response = client.chat.completions.create(
             model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
-            ],
+            messages=messages,
             temperature=0.7,
             max_tokens=1000
         )
         
-        ai_response = response.choices[0].message.content
+        ai_response = response.choices.message.content
         
-        # 检查语法错误
-        grammar_corrections = check_grammar(message, client, model)
+        # 保存AI回复
+        ai_message = Message(conversation_id=conversation.id, role='assistant', content=ai_response)
+        db.session.add(ai_message)
+
+        # 如果是新对话，使用用户第一条消息生成标题
+        if not conversation_id:
+             # 使用用户消息的前30个字符作为标题
+            conversation.title = message_content[:30] + '...' if len(message_content) > 30 else message_content
+
+        db.session.commit()
+        
+        grammar_corrections = check_grammar(message_content, client, model)
         
         return jsonify({
             'success': True,
             'response': ai_response,
+            'conversation_id': conversation.id,
             'grammar_corrections': grammar_corrections
         })
         
@@ -69,6 +90,7 @@ def chat():
             'error': f'API错误: {str(e)}'
         }), 500
     except Exception as e:
+        db.session.rollback()
         return jsonify({
             'success': False,
             'error': f'服务器错误: {str(e)}'
@@ -144,41 +166,32 @@ def build_system_prompt(language_preference):
 def check_grammar(text, client, model):
     """检查语法错误"""
     try:
-        grammar_prompt = f"""请检查以下英语句子的语法错误，如果有错误，请按照以下JSON格式返回：
-
-[
-  {{
-    "original": "错误的部分",
-    "corrected": "修正后的部分", 
-    "explanation": "错误说明"
-  }}
-]
-
-如果没有语法错误，请返回空数组 []
-
-要检查的句子：{text}"""
+        grammar_prompt = f"""
+        Analyze the English parts of the following sentence for grammatical errors. The sentence might be a mix of English and Chinese.
+        If there are errors, provide corrections. If there are no errors in the English parts, return an empty list.
+        Sentence to check: "{text}"
+        """
 
         response = client.chat.completions.create(
             model=model,
             messages=[
+                {"role": "system", "content": "You are a grammar checker. Respond with a JSON object containing a 'corrections' key, which is a list of objects, where each object has 'original', 'corrected', and 'explanation' keys. If no errors, the list should be empty."},
                 {"role": "user", "content": grammar_prompt}
             ],
             temperature=0.1,
-            max_tokens=500
+            max_tokens=500,
+            response_format={"type": "json_object"}
         )
         
-        result = response.choices[0].message.content.strip()
+        result = response.choices.message.content.strip()
         
         # 尝试解析JSON
         try:
-            # 提取JSON部分
-            json_match = re.search(r'\[.*\]', result, re.DOTALL)
-            if json_match:
-                corrections = json.loads(json_match.group())
-                return corrections if isinstance(corrections, list) else []
-            else:
-                return []
-        except json.JSONDecodeError:
+            data = json.loads(result)
+            corrections = data.get("corrections", [])
+            return corrections if isinstance(corrections, list) else []
+        except (json.JSONDecodeError, AttributeError):
+            print(f"无法解析语法检查的JSON响应: {result}")
             return []
             
     except Exception as e:
@@ -215,4 +228,3 @@ def save_config():
             'success': False,
             'error': f'保存配置失败: {str(e)}'
         }), 500
-
