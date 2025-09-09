@@ -33,4 +33,8 @@ def get_conversation_messages(conversation_id):
         return jsonify({'error': 'Conversation not found'}), 404
         
     messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.created_at.asc()).all()
-    return jsonify([msg.to_dict() for msg in messages])
+    return jsonify({
+        'id': conversation.id,
+        'title': conversation.title,
+        'messages': [msg.to_dict() for msg in messages]
+    })

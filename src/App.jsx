@@ -118,7 +118,7 @@ function App() {
       if (response.ok) {
         setConversations(data);
         if (data.length > 0 && !activeConversationId) {
-          handleSwitchConversation(data.id);
+          handleSwitchConversation(data[0].id);
         }
       } else {
         console.error('Failed to fetch conversations:', data.error);
@@ -150,7 +150,7 @@ function App() {
       const response = await fetch(`/api/conversations/${conversationId}`);
       const data = await response.json();
       if (response.ok) {
-        const formattedMessages = data.messages.map(msg => ({
+        const formattedMessages = (data.messages || []).map(msg => ({
           id: msg.id,
           type: msg.role,
           content: msg.content,
