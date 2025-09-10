@@ -259,46 +259,6 @@ def chat():
         "conversation_id": conversation_id
     })
 
-@chat_bp.route("/conversations", methods=["GET"])
-def get_conversations():
-    user_id = 1  # 假设固定用户
-    try:
-        conversations = Conversation.query.filter_by(user_id=user_id).order_by(Conversation.created_at.desc()).all()
-        return jsonify({"success": True, "conversations": [conv.to_dict() for conv in conversations]})
-    except Exception as e:
-        print(f"[ERROR] 获取会话列表失败: {e}")
-        return jsonify({"success": False, "error": f"获取会话列表失败: {str(e)}"}), 500
-
-@chat_bp.route("/conversations/<int:conversation_id>", methods=["GET"])
-def get_conversation_messages(conversation_id):
-    user_id = 1  # 假设固定用户
-    try:
-        conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
-        if not conversation:
-            return jsonify({"success": False, "error": "会话未找到或无权访问"}), 404
-        
-        messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.created_at.asc()).all()
-        return jsonify({"success": True, "messages": [msg.to_dict() for msg in messages]})
-    except Exception as e:
-        print(f"[ERROR] 获取会话消息失败: {e}")
-        return jsonify({"success": False, "error": f"获取会话消息失败: {str(e)}"}), 500
-
-@chat_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
-def delete_conversation(conversation_id):
-    user_id = 1  # 假设固定用户
-    try:
-        conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
-        if not conversation:
-            return jsonify({"success": False, "error": "会话未找到或无权访问"}), 404
-        
-        db.session.delete(conversation)
-        db.session.commit()
-        return jsonify({"success": True, "message": "会话已删除"})
-    except Exception as e:
-        db.session.rollback()
-        print(f"[ERROR] 删除会话失败: {e}")
-        return jsonify({"success": False, "error": f"删除会話失败: {str(e)}"}), 500
-
 @chat_bp.route("/models", methods=["GET"])
 def get_models():
     api_key = request.args.get("apiKey")
