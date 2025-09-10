@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { MessageCircle, Sparkles } from 'lucide-react';
 import ChatPage from './components/ChatPage';
+import HistoryPage from './components/HistoryPage';
 
 const WelcomeScreen = ({ onStart }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-center p-4">
@@ -20,13 +21,28 @@ const WelcomeScreen = ({ onStart }) => (
 );
 
 function App() {
-  const [isChatVisible, setChatVisible] = useState(false);
+  const [view, setView] = useState('welcome'); // 'welcome', 'chat', 'history'
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
 
-  if (!isChatVisible) {
-    return <WelcomeScreen onStart={() => setChatVisible(true)} />;
+  const handleSelectConversation = (conversationId) => {
+    setSelectedConversationId(conversationId);
+    setView('chat');
+  };
+
+  if (view === 'welcome') {
+    return <WelcomeScreen onStart={() => setView('chat')} />;
   }
 
-  return <ChatPage />;
+  if (view === 'history') {
+    return <HistoryPage onBack={() => setView('chat')} onSelectConversation={handleSelectConversation} />;
+  }
+
+  return <ChatPage
+           key={selectedConversationId}
+           conversationId={selectedConversationId}
+           onShowHistory={() => setView('history')}
+           onNewChat={() => setSelectedConversationId(null)}
+         />;
 }
 
 export default App;

@@ -1,11 +1,45 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
-export const useChat = (config) => {
+export const useChat = (config, conversationId, onNewChat) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showTranslations, setShowTranslations] = useState({});
+  const [currentConversationId, setCurrentConversationId] = useState(conversationId);
   const messagesEndRef = useRef(null);
+  const [showTranslations, setShowTranslations] = useState({});
+
+  useEffect(() => {
+    setCurrentConversationId(conversationId);
+    if (conversationId) {
+      fetchMessages(conversationId);
+    } else {
+      setMessages([]);
+    }
+  }, [conversationId]);
+
+  const fetchMessages = async (id) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/conversations/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages');
+      }
+      const data = await response.json();
+      if (data.success) {
+        const formattedMessages = data.messages.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          sender: msg.role === 'user' ? 'user' : 'ai',
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      // You might want to set an error state here
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -15,110 +49,93 @@ export const useChat = (config) => {
     scrollToBottom();
   }, [messages]);
 
-  const clearMessages = () => {
-    setMessages([]);
-    localStorage.removeItem('aiEnglishMessages');
-  };
-
-  const parseAIResponse = (response) => {
-    if (response.includes('|||')) {
-      const [english, chinese] = response.split('|||').map(part => part.trim());
-      return { english, chinese };
-    }
-    return { english: response, chinese: null };
-  };
-
-  const toggleTranslation = (messageId) => {
-    setShowTranslations(prev => ({
-      ...prev,
-      [messageId]: !prev[messageId]
-    }));
+  const toggleTranslation = (id) => {
+    setShowTranslations(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const sendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
-
-    if (!config.apiKey) {
-      // This should be handled by the UI component, e.g., opening the settings dialog.
-      // We can't directly open the dialog from the hook.
-      // For now, we'll just prevent sending the message.
-      alert('Please configure your API key in the settings.');
-      return;
+    if (inputText.trim() === '' || isLoading) return;
+    
+    // If there's no conversation ID, it's a new chat.
+    // The App component will handle resetting the state via the key prop on ChatPage
+    // by calling onNewChat which sets the conversationId to null.
+    if (!currentConversationId) {
+      onNewChat();
     }
 
     const userMessage = {
       id: Date.now(),
-      type: 'user',
-      content: inputText,
-      timestamp: new Date().toLocaleTimeString(),
-      corrections: []
+      text: inputText,
+      sender: 'user',
     };
-
+    
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputText;
     setInputText('');
     setIsLoading(true);
 
     try {
-      const modelToUse = config.customModel.trim() || config.model;
-
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: inputText,
-          config: {
-            ...config,
-            model: modelToUse
-          }
+          message: currentInput,
+          config: config,
+          conversation_id: currentConversationId,
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
+      const data = await response.json();
+      
       if (data.success) {
-        const { english, chinese } = parseAIResponse(data.response);
-        
+        if (!currentConversationId) {
+          setCurrentConversationId(data.conversation_id);
+        }
+
         const aiMessage = {
           id: Date.now() + 1,
-          type: 'ai',
-          content: english,
-          translation: chinese,
-          timestamp: new Date().toLocaleTimeString()
+          text: data.response,
+          sender: 'ai',
         };
         
-        setMessages(currentMessages => {
-          const updatedMessages = currentMessages.map(msg =>
-            msg.id === userMessage.id && data.grammar_corrections
-              ? { ...msg, corrections: data.grammar_corrections }
-              : msg
-          );
-          return [...updatedMessages, aiMessage];
+        setMessages(prev => {
+            const newMessages = [...prev];
+            const userMessageIndex = newMessages.findIndex(m => m.id === userMessage.id);
+            if (userMessageIndex !== -1 && data.grammar_corrections) {
+                newMessages[userMessageIndex].corrections = data.grammar_corrections;
+            }
+            return [...newMessages, aiMessage];
         });
 
       } else {
-        const errorMessage = {
-          id: Date.now() + 1,
-          type: 'error',
-          content: `错误: ${data.error}`,
-          timestamp: new Date().toLocaleTimeString()
-        };
-        setMessages(currentMessages => [...currentMessages, errorMessage]);
+        throw new Error(data.error || 'Unknown error');
       }
 
     } catch (error) {
+      console.error("Error sending message:", error);
       const errorMessage = {
         id: Date.now() + 1,
-        type: 'error',
-        content: `网络错误: ${error.message}`,
-        timestamp: new Date().toLocaleTimeString()
+        text: `Error: ${error.message}`,
+        sender: 'ai',
+        isError: true,
       };
-      setMessages(currentMessages => [...currentMessages, errorMessage]);
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    onNewChat();
+  }, [onNewChat]);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -129,6 +146,7 @@ export const useChat = (config) => {
 
   return {
     messages,
+    setMessages,
     inputText,
     setInputText,
     isLoading,

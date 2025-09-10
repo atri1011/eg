@@ -1,19 +1,20 @@
 import React from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, History } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
 import { useChat } from '../hooks/useChat';
 import SettingsDialog from './SettingsDialog';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
+import { Button } from './ui/button';
 
-const ChatPage = () => {
-  const { 
-    config, 
-    setConfig, 
-    saveConfig, 
-    availableModels, 
-    isLoadingModels, 
-    fetchModels 
+const ChatPage = ({ conversationId, onShowHistory, onNewChat }) => {
+  const {
+    config,
+    setConfig,
+    saveConfig,
+    availableModels,
+    isLoadingModels,
+    fetchModels
   } = useConfig();
   
   const {
@@ -27,7 +28,7 @@ const ChatPage = () => {
     messagesEndRef,
     showTranslations,
     toggleTranslation,
-  } = useChat(config);
+  } = useChat(config, conversationId, onNewChat);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -37,14 +38,19 @@ const ChatPage = () => {
             <MessageCircle className="w-8 h-8 text-blue-600" />
             <h1 className="text-2xl font-bold text-gray-800">AI英语学习助手</h1>
           </div>
-          <SettingsDialog
-            config={config}
-            setConfig={setConfig}
-            saveConfig={saveConfig}
-            availableModels={availableModels}
-            isLoadingModels={isLoadingModels}
-            fetchModels={fetchModels}
-          />
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="icon" onClick={onShowHistory}>
+              <History className="w-5 h-5" />
+            </Button>
+            <SettingsDialog
+              config={config}
+              setConfig={setConfig}
+              saveConfig={saveConfig}
+              availableModels={availableModels}
+              isLoadingModels={isLoadingModels}
+              fetchModels={fetchModels}
+            />
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col bg-white/50 rounded-xl shadow-md overflow-hidden">
