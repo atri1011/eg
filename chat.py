@@ -4,7 +4,6 @@ import openai
 import re
 import json
 from src.models.user import db
-from src.models.conversation import Conversation, Message
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -16,12 +15,7 @@ def chat():
         data = request.json
         message_content = data.get('message', '')
         config = data.get('config', {})
-        conversation_id = data.get('conversation_id')
         
-        # 假设我们有一个固定的 user_id 用于测试
-        # 在实际应用中，这里应该从会话或Token中获取当前登录用户
-        user_id = 1
-
         if not message_content.strip():
             return jsonify({'success': False, 'error': '消息不能为空'}), 400
             
@@ -35,25 +29,11 @@ def chat():
         
         client = openai.OpenAI(api_key=api_key, base_url=api_base)
         
-        if conversation_id:
-            conversation = Conversation.query.get(conversation_id)
-            if not conversation or conversation.user_id != user_id:
-                return jsonify({'success': False, 'error': '对话不存在或无权访问'}), 404
-        else:
-            conversation = Conversation(user_id=user_id)
-            db.session.add(conversation)
-            db.session.flush() # 获取新对话的ID
-        
-        # 保存用户消息
-        user_message = Message(conversation_id=conversation.id, role='user', content=message_content)
-        db.session.add(user_message)
-        
-        # 构建历史消息
-        history = Message.query.filter_by(conversation_id=conversation.id).order_by(Message.created_at.asc()).all()
-        messages = [{"role": msg.role, "content": msg.content} for msg in history]
-        
         system_prompt = build_system_prompt(language_preference)
-        messages.insert(0, {"role": "system", "content": system_prompt})
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": message_content}
+        ]
         
         response = client.chat.completions.create(
             model=model,
@@ -62,25 +42,13 @@ def chat():
             max_tokens=1000
         )
         
-        ai_response = response.choices.message.content
-        
-        # 保存AI回复
-        ai_message = Message(conversation_id=conversation.id, role='assistant', content=ai_response)
-        db.session.add(ai_message)
-
-        # 如果是新对话，使用用户第一条消息生成标题
-        if not conversation_id:
-             # 使用用户消息的前30个字符作为标题
-            conversation.title = message_content[:30] + '...' if len(message_content) > 30 else message_content
-
-        db.session.commit()
+        ai_response = response.choices[0].message.content
         
         grammar_corrections = check_grammar(message_content, client, model)
         
         return jsonify({
             'success': True,
             'response': ai_response,
-            'conversation_id': conversation.id,
             'grammar_corrections': grammar_corrections
         })
         

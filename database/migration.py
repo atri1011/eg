@@ -7,7 +7,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
 from src.models.user import db
-from src.models.conversation import Conversation, Message
 
 def migrate():
     with app.app_context():
@@ -15,20 +14,16 @@ def migrate():
         
         # 检查 'conversations' 表是否存在
         inspector = db.inspect(db.engine)
-        if not inspector.has_table('conversation'):
-            print("Creating 'conversation' table...")
-            Conversation.__table__.create(db.engine)
-            print("'conversation' table created.")
-        else:
-            print("'conversation' table already exists.")
+        if inspector.has_table('conversation'):
+            print("Dropping 'conversation' table...")
+            Conversation.__table__.drop(db.engine)
+            print("'conversation' table dropped.")
             
         # 检查 'messages' 表是否存在
-        if not inspector.has_table('message'):
-            print("Creating 'message' table...")
-            Message.__table__.create(db.engine)
-            print("'message' table created.")
-        else:
-            print("'message' table already exists.")
+        if inspector.has_table('message'):
+            print("Dropping 'message' table...")
+            Message.__table__.drop(db.engine)
+            print("'message' table dropped.")
             
         print("Database migration finished.")
 

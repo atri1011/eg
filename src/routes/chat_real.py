@@ -1,6 +1,7 @@
 import os
 import requests
 from flask import Blueprint, request, jsonify
+from src.models.user import db, Conversation, Message
 import json
 import re
 import time
@@ -134,31 +135,38 @@ def get_detailed_corrections(text, api_base, api_key, model):
                 return correction_data
             else:
                 print("[DEBUG] AI返回的JSON结构不符合预期")
-                return None
+                raise Exception("AI返回的JSON结构不符合预期")
 
         except json.JSONDecodeError as e:
             print(f"[ERROR] JSON解析错误: {e}")
             print(f"[ERROR] 无法解析的原始AI响应内容: '{content}'")
-            return None
+            raise Exception(f"JSON解析错误: {content}")
         except requests.exceptions.RequestException as e:
             print(f"[ERROR] 详细修正API请求失败: {e}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
             else:
-                return None
+                raise Exception(f"详细修正API请求失败: {e}")
         except Exception as e:
             print(f"[ERROR] 详细修正发生未知错误: {e}")
-            return None
+            raise Exception(f"详细修正发生未知错误: {e}")
     
     print("[ERROR] 所有重试尝试均失败")
-    return None
+    raise Exception("所有重试尝试均失败")
 
 @chat_bp.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
     user_message = data.get("message")
-    print(f"[DEBUG] 收到用户消息: {user_message}")
     config = data.get("config", {})
+    conversation_id = data.get("conversation_id")
+    
+    print(f"[DEBUG] 收到用户消息: {user_message} (会话ID: {conversation_id})")
+
+    user_id = 1  # 假设固定用户
+
+    if not user_message or not user_message.strip():
+        return jsonify({"success": False, "error": "Message content is required."}), 400
 
     api_key = config.get("apiKey")
     api_base = config.get("apiBase")
@@ -168,60 +176,87 @@ def chat():
     if not api_key or not api_base or not model:
         return jsonify({"success": False, "error": "API Key, Base URL, or Model is missing."}), 400
 
+    try:
+        if conversation_id:
+            conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
+            if not conversation:
+                return jsonify({'success': False, 'error': 'Conversation not found or access denied'}), 404
+        else:
+            conversation = Conversation(user_id=user_id, title=user_message[:50])
+            db.session.add(conversation)
+            db.session.flush()
+            conversation_id = conversation.id
+            print(f"[DEBUG] 创建新会话，ID: {conversation_id}")
+
+        user_msg_obj = Message(conversation_id=conversation.id, role='user', content=user_message)
+        db.session.add(user_msg_obj)
+        db.session.commit()
+        print(f"[DEBUG] 用户消息已保存到数据库 (消息ID: {user_msg_obj.id})")
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] 数据库操作失败: {e}")
+        return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
+
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
-
+    
     grammar_correction_result = None
     message_for_ai = user_message
 
     try:
-        print(f"[DEBUG] 开始调用统一处理功能，文本: {user_message}")
         detailed_corrections = get_detailed_corrections(user_message, api_base, api_key, model)
-        
         if detailed_corrections:
             grammar_correction_result = detailed_corrections
             message_for_ai = detailed_corrections.get("corrected_sentence", user_message)
             print(f"[DEBUG] 修正完成，用于AI对话的消息: {message_for_ai}")
-        else:
-            print(f"[DEBUG] 无需修正，使用原始消息进行AI对话")
-            message_for_ai = user_message
 
-    except Exception as e:
-        print(f"[ERROR] 调用智能处理功能时发生未知错误: {e}")
-        pass
+        # 构建发送给AI的聊天历史
+        history_messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.created_at.asc()).all()
+        messages_for_api = [{"role": msg.role, "content": msg.content} for msg in history_messages]
 
-    chat_payload = {
-        "model": model,
-        "messages": [
-            {
-                "role": "system",
-                "content": build_system_prompt(language_preference)
-            },
-            {
-                "role": "user",
-                "content": message_for_ai
-            }
-        ],
-        "max_tokens": 1000
-    }
+        chat_payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": build_system_prompt(language_preference)
+                },
+                *messages_for_api
+            ],
+            "max_tokens": 1000
+        }
 
-    try:
         chat_response = requests.post(OPENAI_CHAT_COMPLETIONS_URL.format(api_base=api_base), headers=headers, json=chat_payload, timeout=30)
         chat_response.raise_for_status()
         chat_result = chat_response.json()
         ai_response_content = chat_result["choices"][0]["message"]["content"].strip()
+        print(f"[DEBUG] 从API获取的AI回复: {ai_response_content}")
+
     except requests.exceptions.RequestException as e:
         return jsonify({"success": False, "error": f"无法连接到API服务器或API请求失败: {str(e)}"}), 500
     except Exception as e:
-        return jsonify({"success": False, "error": f"API调用失败: {str(e)}"}), 500
+        print(f"[ERROR] 调用智能处理功能或API时发生未知错误: {e}")
+        return jsonify({"success": False, "error": f"服务器内部错误: {str(e)}"}), 500
 
-    print(f"[DEBUG] 最终返回给前端的修正结果: {grammar_correction_result}")
+    try:
+        ai_msg_obj = Message(conversation_id=conversation.id, role='assistant', content=ai_response_content)
+        db.session.add(ai_msg_obj)
+        db.session.commit()
+        print(f"[DEBUG] AI回复已保存到数据库 (消息ID: {ai_msg_obj.id})")
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] 保存AI回复失败: {e}")
+        # 即使保存失败，也要将AI响应返回给用户
+        pass
+
     return jsonify({
         "success": True,
         "response": ai_response_content,
-        "grammar_corrections": grammar_correction_result
+        "grammar_corrections": grammar_correction_result,
+        "conversation_id": conversation_id
     })
 
 @chat_bp.route("/models", methods=["GET"])
