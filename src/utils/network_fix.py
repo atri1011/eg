@@ -123,11 +123,16 @@ def resolve_database_url_to_ipv4(database_url):
                     resolved_url = urlunparse(parsed)
                     print(f"[INFO] Database URL resolved: {parsed.hostname} -> {ipv4_addr}")
                     return resolved_url
+                else:
+                    print(f"[WARN] No IPv4 address found for hostname '{parsed.hostname}'")
+            except socket.gaierror as e:
+                print(f"[WARN] DNS resolution failed for '{parsed.hostname}': {e}")
             except Exception as e:
-                print(f"[WARN] Could not resolve database hostname '{parsed.hostname}' to IPv4: {e}")
+                print(f"[ERROR] Unexpected error resolving hostname '{parsed.hostname}': {e}")
     except Exception as e:
         print(f"[ERROR] Error processing database URL: {e}")
     
+    print(f"[INFO] Using original database URL (resolution failed)")
     return database_url
 
 

@@ -61,14 +61,19 @@ app.register_blueprint(chat_bp, url_prefix='/api')
 database_url = os.environ.get('DATABASE_URL')
 if not database_url:
     if IS_PRODUCTION:
-        raise RuntimeError("DATABASE_URL environment variable is required")
+        app.logger.error("DATABASE_URL environment variable is missing in production")
+        raise RuntimeError("DATABASE_URL environment variable is required in production")
     database_url = 'sqlite:///database/app.db'
 
 if database_url:
-    database_url = resolve_database_url_to_ipv4(database_url)
-
+    app.logger.info(f"Processing database URL for environment: {ENVIRONMENT}")
+    
+    # Apply IPv4 resolution for PostgreSQL connections
+    if database_url.startswith(('postgres://', 'postgresql://')):
+        database_url = resolve_database_url_to_ipv4(database_url)
+    
     # Convert relative database path to absolute path for SQLite
-    if database_url.startswith('sqlite:///'):
+    elif database_url.startswith('sqlite:///'):
         db_path = database_url.replace('sqlite:///', '')
         if not os.path.isabs(db_path):
             project_root = os.path.dirname(os.path.abspath(__file__))
@@ -79,13 +84,19 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 生产环境数据库连接池配置
-if IS_PRODUCTION and database_url.startswith('postgres'):
+if IS_PRODUCTION and database_url.startswith(('postgres', 'postgresql')):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 10,
+        'pool_size': 5,
         'pool_recycle': 300,
         'pool_pre_ping': True,
-        'max_overflow': 20
+        'max_overflow': 10,
+        'pool_timeout': 30,
+        'connect_args': {
+            'sslmode': 'require',
+            'connect_timeout': 10
+        }
     }
+    app.logger.info("PostgreSQL connection pool configured for production")
 
 db.init_app(app)
 

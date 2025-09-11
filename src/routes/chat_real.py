@@ -310,6 +310,9 @@ def get_conversations():
     user_id = 1  # 假设固定用户，与chat接口保持一致
     
     try:
+        # 测试数据库连接
+        db.session.execute(db.text('SELECT 1'))
+        
         conversations = Conversation.query.filter_by(user_id=user_id).order_by(Conversation.created_at.desc()).all()
         conversations_data = []
         
@@ -334,8 +337,19 @@ def get_conversations():
         })
     
     except Exception as e:
-        print(f"[ERROR] 获取会话列表失败: {e}")
-        return jsonify({"success": False, "error": f"获取会话列表失败: {str(e)}"}), 500
+        print(f"[ERROR] 获取会话列表失败: {type(e).__name__}: {str(e)}")
+        
+        # 检查是否是数据库连接问题
+        if any(keyword in str(e).lower() for keyword in ['connection', 'connect', 'operational', 'network']):
+            error_message = "数据库连接失败，请检查网络连接或稍后重试"
+        else:
+            error_message = f"获取会话列表失败: {str(e)}"
+            
+        return jsonify({
+            "success": False, 
+            "error": error_message,
+            "error_type": type(e).__name__
+        }), 500
 
 @chat_bp.route("/conversations/<int:conversation_id>/messages", methods=["GET"])
 def get_conversation_messages(conversation_id):
