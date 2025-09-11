@@ -85,18 +85,27 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 生产环境数据库连接池配置
 if IS_PRODUCTION and database_url.startswith(('postgres', 'postgresql')):
+    # 强制使用 Supabase 连接池来避免 IPv6 问题
+    if 'supabase.co' in database_url:
+        # 修改为连接池端口 (6543) 而不是直连端口 (5432)
+        database_url = database_url.replace(':5432/', ':6543/')
+        app.logger.info("Using Supabase connection pooler (IPv4) instead of direct connection")
+    
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 5,
+        'pool_size': 3,  # 减少连接数适配连接池
         'pool_recycle': 300,
         'pool_pre_ping': True,
-        'max_overflow': 10,
+        'max_overflow': 5,
         'pool_timeout': 30,
         'connect_args': {
             'sslmode': 'require',
-            'connect_timeout': 10
+            'connect_timeout': 15
         }
     }
     app.logger.info("PostgreSQL connection pool configured for production")
+
+# 更新配置后的 database_url
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 db.init_app(app)
 
