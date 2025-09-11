@@ -129,8 +129,48 @@ def get_detailed_corrections(text, api_base, api_key, model):
             if content.endswith("```"):
                 content = content[:-3]
             content = content.strip()
+ 
+            try:
+                # 首先尝试直接解析
+                correction_data = json.loads(content)
+            except json.JSONDecodeError:
+                print(f"[WARN] 直接解析JSON失败，尝试修复截断的JSON. 原始content: '{content}'")
+                # 寻找最后一个 "},"
+                last_brace_comma = content.rfind('},')
+                # 寻找最后一个 "]"
+                last_bracket = content.rfind(']')
+                
+                fixed_content = content
+                
+                # 如果找到了 "},"，说明可能是一个列表中的对象被截断
+                if last_brace_comma != -1:
+                    # 截断到 "}," 之后，并补全 "]}"
+                    fixed_content = content[:last_brace_comma + 1] + ']}'
+                # 如果只找到了 "]"，说明可能是列表本身被截断
+                elif last_bracket != -1:
+                    fixed_content = content[:last_bracket + 1] + '}'
+                else:
+                    # 如果都找不到，这是一个更复杂的截断，我们尝试移除最后可能不完整的部分
+                    # 找到最后一个逗号
+                    last_comma = content.rfind(',')
+                    if last_comma != -1:
+                         # 截断到最后一个逗号之前，然后尝试补全JSON
+                        fixed_content = content[:last_comma] + ']}'
+                
+                # 最后的保障措施：如果还是不行，就确保最外层的大括号是闭合的
+                if not fixed_content.endswith('}'):
+                    # 找到最后一个 "{"
+                    last_open_brace = fixed_content.rfind('{')
+                    if last_open_brace != -1:
+                        fixed_content = fixed_content[:last_open_brace] + '}'
 
-            correction_data = json.loads(content)
+                try:
+                    print(f"[DEBUG] 尝试解析修复后的JSON: '{fixed_content}'")
+                    correction_data = json.loads(fixed_content)
+                except json.JSONDecodeError as e_inner:
+                    print(f"[ERROR] 修复后JSON解析仍然失败: {e_inner}")
+                    # 抛出原始的、无法解析的内容，以便错误处理流程捕获
+                    raise Exception(f"JSON解析错误: {content}")
             
             if "original_sentence" in correction_data and "corrected_sentence" in correction_data and "corrections" in correction_data:
                 original = correction_data.get("original_sentence")
@@ -186,7 +226,18 @@ def chat():
     if not api_key or not api_base or not model:
         return jsonify({"success": False, "error": "API Key, Base URL, or Model is missing."}), 400
 
+    grammar_correction_result = None
+    message_for_ai = user_message
+    
     try:
+        # 1. 获取语法修正
+        detailed_corrections = get_detailed_corrections(user_message, api_base, api_key, model)
+        if detailed_corrections:
+            grammar_correction_result = detailed_corrections
+            message_for_ai = detailed_corrections.get("corrected_sentence", user_message)
+            print(f"[DEBUG] 修正完成，用于AI对话的消息: {message_for_ai}")
+
+        # 2. 处理会话和保存用户消息
         if conversation_id:
             conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
             if not conversation:
@@ -197,33 +248,17 @@ def chat():
             db.session.flush()
             conversation_id = conversation.id
             print(f"[DEBUG] 创建新会话，ID: {conversation_id}")
-
-        user_msg_obj = Message(conversation_id=conversation.id, role='user', content=user_message)
+            
+        user_msg_obj = Message(conversation_id=conversation.id, role='user', content=user_message, corrections=grammar_correction_result)
         db.session.add(user_msg_obj)
         db.session.commit()
         print(f"[DEBUG] 用户消息已保存到数据库 (消息ID: {user_msg_obj.id})")
 
-    except Exception as e:
-        db.session.rollback()
-        print(f"[ERROR] 数据库操作失败: {e}")
-        return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    grammar_correction_result = None
-    message_for_ai = user_message
-
-    try:
-        detailed_corrections = get_detailed_corrections(user_message, api_base, api_key, model)
-        if detailed_corrections:
-            grammar_correction_result = detailed_corrections
-            message_for_ai = detailed_corrections.get("corrected_sentence", user_message)
-            print(f"[DEBUG] 修正完成，用于AI对话的消息: {message_for_ai}")
-
-        # 构建发送给AI的聊天历史
+        # 3. 构建发送给AI的聊天历史
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
         history_messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.created_at.asc()).all()
         messages_for_api = [{"role": msg.role, "content": msg.content} for msg in history_messages]
 
@@ -350,6 +385,7 @@ def get_conversation_messages(conversation_id):
                 'id': message.id,
                 'type': 'user' if message.role == 'user' else 'ai',
                 'content': message.content,
+                'corrections': message.corrections,
                 'timestamp': message.created_at.strftime('%H:%M:%S'),
                 'created_at': message.created_at.isoformat()
             }
