@@ -1,12 +1,22 @@
 import os
 import requests
 from flask import Blueprint, request, jsonify
-from src.models.user import db, Conversation, Message
+from src.models.user import db, Conversation, Message, User
 import json
 import re
 import time
 
 chat_bp = Blueprint("chat", __name__)
+
+def ensure_user_exists(user_id=1):
+    """确保指定用户存在，如果不存在则创建"""
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        user = User(id=user_id, username=f'user_{user_id}', email=f'user{user_id}@example.com')
+        db.session.add(user)
+        db.session.commit()
+        print(f"[INFO] Created default user with ID: {user_id}")
+    return user
 
 # 定义OpenAI API的URL和模型
 OPENAI_CHAT_COMPLETIONS_URL = "{api_base}/chat/completions"
@@ -187,6 +197,13 @@ def chat():
     print(f"[DEBUG] 收到用户消息: {user_message} (会话ID: {conversation_id})")
 
     user_id = 1  # 假设固定用户
+    
+    # 确保用户存在
+    try:
+        ensure_user_exists(user_id)
+    except Exception as e:
+        print(f"[ERROR] 创建或确认用户失败: {e}")
+        return jsonify({"success": False, "error": f"用户初始化失败: {str(e)}"}), 500
 
     if not user_message or not user_message.strip():
         return jsonify({"success": False, "error": "Message content is required."}), 400
@@ -310,6 +327,9 @@ def get_conversations():
     user_id = 1  # 假设固定用户，与chat接口保持一致
     
     try:
+        # 确保用户存在
+        ensure_user_exists(user_id)
+        
         # 测试数据库连接
         db.session.execute(db.text('SELECT 1'))
         
@@ -357,6 +377,9 @@ def get_conversation_messages(conversation_id):
     user_id = 1  # 假设固定用户
     
     try:
+        # 确保用户存在
+        ensure_user_exists(user_id)
+        
         # 验证会话是否属于当前用户
         conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
         if not conversation:
@@ -402,6 +425,9 @@ def delete_conversation(conversation_id):
     user_id = 1  # 假设固定用户
     
     try:
+        # 确保用户存在
+        ensure_user_exists(user_id)
+        
         # 验证会话是否属于当前用户
         conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
         if not conversation:

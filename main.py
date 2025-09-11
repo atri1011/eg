@@ -172,13 +172,27 @@ def handle_exception(e):
     else:
         return jsonify({'error': str(e)}), 500
 
-# 确保数据库表在启动时创建
+# 确保数据库表在启动时创建，并初始化默认数据
 with app.app_context():
     try:
         db.create_all()
         app.logger.info("Database tables created successfully")
+        
+        # 创建默认用户（如果不存在）
+        from src.models.user import User
+        default_user = User.query.filter_by(id=1).first()
+        if not default_user:
+            default_user = User(id=1, username='default_user', email='default@example.com')
+            db.session.add(default_user)
+            db.session.commit()
+            app.logger.info("Default user created successfully")
+        else:
+            app.logger.info("Default user already exists")
+            
     except Exception as e:
-        app.logger.error(f"Failed to create database tables: {str(e)}")
+        app.logger.error(f"Failed to create database tables or default user: {str(e)}")
+        if IS_PRODUCTION:
+            raise  # 在生产环境中，这是致命错误
 
 if __name__ == '__main__':
     # 只在直接运行时使用（开发环境）
