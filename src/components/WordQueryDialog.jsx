@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Book, Globe, Lightbulb, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Book, Globe, Lightbulb, FileText, BarChart3 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
 
@@ -18,46 +17,87 @@ const WordQueryDialog = ({
   context = '',
   onWordQuery 
 }) => {
-  const [queryWord, setQueryWord] = useState(selectedWord);
+  const [selectedText, setSelectedText] = useState(selectedWord);
+  const [words, setWords] = useState([]);
+  const [selectedVocab, setSelectedVocab] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [wordResult, setWordResult] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [currentStep, setCurrentStep] = useState('vocab-selection'); // 'vocab-selection' | 'analysis'
 
-  const handleQuery = async () => {
-    if (!queryWord.trim()) return;
+  // 提取单词
+  const extractWords = (text) => {
+    if (!text) return [];
+    // 提取英文单词，过滤掉标点符号和空格
+    const wordMatches = text.match(/[a-zA-Z]+(?:[-'][a-zA-Z]+)*/g);
+    if (!wordMatches) return [];
+    
+    // 去重并过滤掉单个字母和常见词汇
+    const commonWords = new Set(['a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must', 'shall']);
+    const uniqueWords = [...new Set(wordMatches)]
+      .filter(word => word.length > 1 && !commonWords.has(word.toLowerCase()))
+      .slice(0, 20); // 最多显示20个单词
+    
+    return uniqueWords;
+  };
+
+  // 处理句子解析
+  const handleAnalyzeSentence = async () => {
+    if (selectedVocab.length === 0) {
+      alert('请至少选择一个不认识的生词');
+      return;
+    }
     
     setIsLoading(true);
     try {
-      const result = await onWordQuery(queryWord.trim(), context);
-      setWordResult(result);
+      const result = await onWordQuery(selectedText, context, selectedVocab);
+      setAnalysisResult(result);
+      setCurrentStep('analysis');
     } catch (error) {
-      console.error('查询单词失败:', error);
-      setWordResult({
-        error: '查询失败，请稍后再试'
+      console.error('句子解析失败:', error);
+      setAnalysisResult({
+        error: '解析失败，请稍后再试'
       });
+      setCurrentStep('analysis');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleQuery();
-    }
+  // 切换生词选择
+  const toggleVocabSelection = (word) => {
+    setSelectedVocab(prev => 
+      prev.includes(word)
+        ? prev.filter(w => w !== word)
+        : [...prev, word]
+    );
   };
 
-  React.useEffect(() => {
-    if (selectedWord && selectedWord !== queryWord) {
-      setQueryWord(selectedWord);
-      setWordResult(null);
+  // 重置到第一步
+  const resetToSelection = () => {
+    setCurrentStep('vocab-selection');
+    setAnalysisResult(null);
+  };
+
+  useEffect(() => {
+    if (selectedWord && selectedWord !== selectedText) {
+      setSelectedText(selectedWord);
+      setWords(extractWords(selectedWord));
+      setSelectedVocab([]);
+      setAnalysisResult(null);
+      setCurrentStep('vocab-selection');
     }
   }, [selectedWord]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        {!wordResult ? (
-          // 查询界面 - 匹配截图样式
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sr-only">
+          <DialogTitle>
+            {currentStep === 'vocab-selection' ? '句子解析 - 生词选择' : '句子解析 - 分析结果'}
+          </DialogTitle>
+        </DialogHeader>
+        {currentStep === 'vocab-selection' ? (
+          // 第一步：生词选择界面
           <div className="p-6">
             {/* 顶部选中文本显示 */}
             <div className="flex items-center space-x-3 mb-6">
@@ -66,111 +106,159 @@ const WordQueryDialog = ({
               </div>
               <div>
                 <p className="text-sm text-gray-500">选中文本</p>
-                <p className="text-lg font-semibold text-gray-800">"{selectedWord}"</p>
+                <p className="text-lg font-semibold text-gray-800">"{selectedText}"</p>
               </div>
             </div>
 
-            {/* 单词查询标题区域 */}
-            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+            {/* 句子解析标题区域 */}
+            <div className="bg-green-50 rounded-2xl p-6 mb-6">
               <div className="flex items-center space-x-3 mb-4">
-                <Search className="w-6 h-6 text-blue-600" />
-                <h2 className="text-xl font-bold text-gray-800">单词查询</h2>
+                <BarChart3 className="w-6 h-6 text-green-600" />
+                <h2 className="text-xl font-bold text-gray-800">句子解析</h2>
               </div>
-              <p className="text-gray-600 mb-6">点击下方按钮查询这个单词的详细信息</p>
-              
-              {/* 查询按钮 */}
-              <Button 
-                onClick={handleQuery}
-                disabled={!queryWord.trim() || isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 rounded-2xl shadow-lg"
-                size="lg"
-              >
-                <Search className="w-5 h-5 mr-2" />
-                {isLoading ? '查询中...' : '查询单词'}
-              </Button>
+              <p className="text-gray-600 mb-6">选择你不认识的单词，我们将为你解析整个句子</p>
             </div>
+
+            {/* 生词选择区域 */}
+            <div className="mb-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Book className="w-5 h-5 text-orange-600" />
+                <h3 className="text-lg font-bold text-gray-800">选择生词 ({selectedVocab.length} 个已选)</h3>
+              </div>
+              
+              <div className="flex flex-wrap gap-3 mb-6">
+                {words.map((word, index) => (
+                  <button
+                    key={index}
+                    onClick={() => toggleVocabSelection(word)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      selectedVocab.includes(word)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {word}
+                  </button>
+                ))}
+              </div>
+
+              {words.length === 0 && (
+                <p className="text-gray-500 text-center py-8">未找到可选择的单词</p>
+              )}
+            </div>
+
+            {/* 解析按钮 */}
+            <Button 
+              onClick={handleAnalyzeSentence}
+              disabled={selectedVocab.length === 0 || isLoading}
+              className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 rounded-2xl shadow-lg"
+              size="lg"
+            >
+              <Search className="w-5 h-5 mr-2" />
+              {isLoading ? '解析中...' : `解析句子 (${selectedVocab.length} 个生词)`}
+            </Button>
           </div>
         ) : (
-          // 结果显示界面 - 匹配截图样式
+          // 第二步：解析结果界面
           <div className="p-6">
-            {wordResult.error ? (
+            {/* 返回按钮 */}
+            <div className="mb-4">
+              <Button
+                onClick={resetToSelection}
+                variant="outline"
+                className="text-blue-600 hover:text-blue-700"
+              >
+                ← 重新选择生词
+              </Button>
+            </div>
+
+            {analysisResult?.error ? (
               <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
-                <p className="text-red-600 text-center">{wordResult.error}</p>
+                <p className="text-red-600 text-center">{analysisResult.error}</p>
               </div>
-            ) : (
+            ) : analysisResult ? (
               <div className="space-y-6">
-                {/* 单词头部信息 - 匹配截图布局 */}
+                {/* 句子解析标题 */}
                 <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
-                    <Book className="w-8 h-8 text-blue-600" />
+                  <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center">
+                    <BarChart3 className="w-8 h-8 text-green-600" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-baseline space-x-3 mb-2">
-                      <h1 className="text-3xl font-bold text-gray-900">
-                        {wordResult.word || queryWord}
-                      </h1>
-                      {wordResult.phonetic && (
-                        <span className="text-lg text-gray-500 font-mono">
-                          /{wordResult.phonetic}/
-                        </span>
-                      )}
-                    </div>
-                    {wordResult.partOfSpeech && (
-                      <Badge 
-                        variant="secondary" 
-                        className="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full border-0"
-                      >
-                        {wordResult.partOfSpeech}
-                      </Badge>
-                    )}
+                    <h1 className="text-2xl font-bold text-gray-900">句子解析</h1>
+                    <p className="text-gray-600">详细的语法和翻译解释</p>
                   </div>
                 </div>
 
-                {/* 释义部分 */}
-                {wordResult.definition && (
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="w-5 h-5 text-orange-600" />
-                      <h3 className="text-lg font-bold text-gray-800">释义</h3>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-gray-700 leading-relaxed">
-                        {wordResult.definition}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {/* 翻译部分 */}
-                {wordResult.translation && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Globe className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-bold text-gray-800">翻译</h3>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <p className="text-gray-700 leading-relaxed">
+                      {analysisResult.translation || '暂无翻译'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 语法解释部分 */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-5 h-5 text-orange-600" />
+                    <h3 className="text-lg font-bold text-gray-800">语法解释</h3>
+                  </div>
+                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {analysisResult.grammar || '暂无语法解释'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 生词释义部分 */}
+                {analysisResult.vocabulary && analysisResult.vocabulary.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
-                      <Globe className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-bold text-gray-800">翻译</h3>
+                      <Book className="w-5 h-5 text-purple-600" />
+                      <h3 className="text-lg font-bold text-gray-800">生词释义</h3>
                     </div>
-                    <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-                      <p className="text-gray-700 leading-relaxed">
-                        {wordResult.translation}
-                      </p>
+                    <div className="space-y-3">
+                      {analysisResult.vocabulary.map((vocab, index) => (
+                        <div key={index} className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <span className="text-lg font-bold text-purple-900">{vocab.word}</span>
+                            {vocab.phonetic && (
+                              <span className="text-sm text-purple-700 font-mono">/{vocab.phonetic}/</span>
+                            )}
+                            {vocab.partOfSpeech && (
+                              <Badge className="bg-purple-200 text-purple-800">{vocab.partOfSpeech}</Badge>
+                            )}
+                          </div>
+                          <p className="text-purple-800 mb-1">{vocab.meaning}</p>
+                          {vocab.translation && (
+                            <p className="text-purple-700 text-sm">{vocab.translation}</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* 例句部分 */}
-                {wordResult.examples && wordResult.examples.length > 0 && (
+                {/* 类似例句部分 */}
+                {analysisResult.examples && analysisResult.examples.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <Lightbulb className="w-5 h-5 text-yellow-600" />
-                      <h3 className="text-lg font-bold text-gray-800">例句</h3>
+                      <h3 className="text-lg font-bold text-gray-800">类似例句</h3>
                     </div>
                     <div className="space-y-3">
-                      {wordResult.examples.map((example, index) => (
-                        <div key={index} className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                          <p className="text-blue-900 font-medium mb-2">
+                      {analysisResult.examples.map((example, index) => (
+                        <div key={index} className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                          <p className="text-yellow-900 font-medium mb-2">
                             {example.sentence || example}
                           </p>
                           {example.translation && (
-                            <p className="text-blue-700 text-sm">
+                            <p className="text-yellow-700 text-sm">
                               {example.translation}
                             </p>
                           )}
@@ -179,6 +267,10 @@ const WordQueryDialog = ({
                     </div>
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">正在解析中...</p>
               </div>
             )}
           </div>

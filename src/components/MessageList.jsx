@@ -13,13 +13,13 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
   const [selectedContext, setSelectedContext] = useState('');
   const selectionTimeoutRef = useRef(null);
 
-  // 检测选中的文本是否为英文单词
-  const isEnglishWord = useCallback((text) => {
+  // 检测选中的文本是否为英文单词或词组
+  const isEnglishText = useCallback((text) => {
     if (!text || text.trim().length === 0) return false;
-    // 检测是否为单个英文单词（允许连字符和撇号）
-    const wordRegex = /^[a-zA-Z]+(?:[-'][a-zA-Z]+)*$/;
     const trimmedText = text.trim();
-    return wordRegex.test(trimmedText) && trimmedText.length > 1;
+    // 支持多个单词、句子（允许连字符、撇号、空格、标点符号）
+    const textRegex = /^[a-zA-Z]+(?:[-'\s.,!?;:][a-zA-Z]*)*$/;
+    return textRegex.test(trimmedText) && trimmedText.length > 1;
   }, []);
 
   // 处理文本选择
@@ -27,7 +27,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
     
-    if (selectedText && isEnglishWord(selectedText)) {
+    if (selectedText && isEnglishText(selectedText)) {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       
@@ -56,7 +56,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
     } else {
       setShowQueryButton(false);
     }
-  }, [isEnglishWord]);
+  }, [isEnglishText]);
 
   // 处理查询按钮点击
   const handleQueryClick = useCallback(() => {
@@ -189,7 +189,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg border border-white/20 backdrop-blur-sm"
           >
             <Search className="w-3 h-3 mr-1" />
-            查询单词
+            查询词汇
           </Button>
         </div>
       )}

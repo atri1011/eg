@@ -4,9 +4,9 @@ export const useWordQuery = (config) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const queryWord = useCallback(async (word, context = '') => {
+  const queryWord = useCallback(async (word, context = '', selectedVocab = []) => {
     if (!word || !word.trim()) {
-      throw new Error('单词不能为空');
+      throw new Error('文本内容不能为空');
     }
 
     if (!config?.apiKey || !config?.apiBase) {
@@ -25,6 +25,8 @@ export const useWordQuery = (config) => {
         body: JSON.stringify({
           word: word.trim(),
           context: context.trim(),
+          selectedVocab: selectedVocab,
+          queryType: selectedVocab.length > 0 ? 'sentence-analysis' : 'word-query',
           config: {
             apiBase: config.apiBase,
             apiKey: config.apiKey,
