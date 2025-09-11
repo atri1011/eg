@@ -27,17 +27,14 @@ const MessageList = ({ messages, isLoading, messagesEndRef }) => {
               </div>
               
               {message.type === 'ai' && message.translation && (
-                <div className="mt-2 pt-2 border-t border-blue-500/50">
-                  <span className="text-xs text-gray-400">中文意思</span>
-                  <div className="translation-container mt-1">
-                    <div className="translation-content text-sm text-black p-2 rounded">
+                <div className="mt-2">
+                  <div className="translation-container">
+                    <div className="translation-content text-sm text-black p-2 rounded mt-2">
                       {message.translation}
                     </div>
                   </div>
                 </div>
               )}
-              
-              <div className="text-xs opacity-70 mt-1">{message.timestamp}</div>
             </div>
 
             {/* 优化与纠错显示 */}
