@@ -124,53 +124,26 @@ def get_detailed_corrections(text, api_base, api_key, model):
             content = result["choices"][0]["message"]["content"].strip()
             print(f"[DEBUG] 详细修正原始响应: {content}")
 
-            if content.startswith("```json"):
-                content = content[7:]
-            if content.endswith("```"):
-                content = content[:-3]
-            content = content.strip()
- 
-            try:
-                # 首先尝试直接解析
-                correction_data = json.loads(content)
-            except json.JSONDecodeError:
-                print(f"[WARN] 直接解析JSON失败，尝试修复截断的JSON. 原始content: '{content}'")
-                # 寻找最后一个 "},"
-                last_brace_comma = content.rfind('},')
-                # 寻找最后一个 "]"
-                last_bracket = content.rfind(']')
-                
-                fixed_content = content
-                
-                # 如果找到了 "},"，说明可能是一个列表中的对象被截断
-                if last_brace_comma != -1:
-                    # 截断到 "}," 之后，并补全 "]}"
-                    fixed_content = content[:last_brace_comma + 1] + ']}'
-                # 如果只找到了 "]"，说明可能是列表本身被截断
-                elif last_bracket != -1:
-                    fixed_content = content[:last_bracket + 1] + '}'
-                else:
-                    # 如果都找不到，这是一个更复杂的截断，我们尝试移除最后可能不完整的部分
-                    # 找到最后一个逗号
-                    last_comma = content.rfind(',')
-                    if last_comma != -1:
-                         # 截断到最后一个逗号之前，然后尝试补全JSON
-                        fixed_content = content[:last_comma] + ']}'
-                
-                # 最后的保障措施：如果还是不行，就确保最外层的大括号是闭合的
-                if not fixed_content.endswith('}'):
-                    # 找到最后一个 "{"
-                    last_open_brace = fixed_content.rfind('{')
-                    if last_open_brace != -1:
-                        fixed_content = fixed_content[:last_open_brace] + '}'
+            # 使用正则表达式从响应中提取JSON
+            json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
+            
+            if not json_match:
+                print(f"[DEBUG] AI响应中未找到有效的JSON代码块。响应内容: '{content}'")
+                # 如果没有找到JSON，那么可能AI认为这句话不需要修正
+                # 在这种情况下，我们直接返回None，表示没有修正
+                return None
 
-                try:
-                    print(f"[DEBUG] 尝试解析修复后的JSON: '{fixed_content}'")
-                    correction_data = json.loads(fixed_content)
-                except json.JSONDecodeError as e_inner:
-                    print(f"[ERROR] 修复后JSON解析仍然失败: {e_inner}")
-                    # 抛出原始的、无法解析的内容，以便错误处理流程捕获
-                    raise Exception(f"JSON解析错误: {content}")
+            json_str = json_match.group(1).strip()
+            
+            try:
+                # 解析提取出的JSON字符串
+                correction_data = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                print(f"[ERROR] 从提取的字符串中解析JSON失败: {e}")
+                print(f"[ERROR] 无法解析的JSON字符串: '{json_str}'")
+                # 即使提取了，也可能因为截断等原因解析失败
+                # 向上抛出异常，让外部错误处理逻辑捕获
+                raise Exception(f"JSON解析错误: {json_str}")
             
             if "original_sentence" in correction_data and "corrected_sentence" in correction_data and "corrections" in correction_data:
                 original = correction_data.get("original_sentence")
