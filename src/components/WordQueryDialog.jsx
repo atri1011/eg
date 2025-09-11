@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Book, Globe, Lightbulb } from 'lucide-react';
+import { Search, Book, Globe, Lightbulb, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -56,134 +56,128 @@ const WordQueryDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Book className="w-6 h-6 text-blue-600" />
+        {!wordResult ? (
+          // 查询界面 - 匹配截图样式
+          <div className="p-6">
+            {/* 顶部选中文本显示 */}
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">选中文本</p>
+                <p className="text-lg font-semibold text-gray-800">"{selectedWord}"</p>
+              </div>
             </div>
-            <div>
-              <DialogTitle className="text-xl font-bold text-gray-800">
-                单词查询
-              </DialogTitle>
-              <p className="text-sm text-gray-500 mt-1">
-                点击下方按钮查询这个单词的详细信息
-              </p>
+
+            {/* 单词查询标题区域 */}
+            <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Search className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-bold text-gray-800">单词查询</h2>
+              </div>
+              <p className="text-gray-600 mb-6">点击下方按钮查询这个单词的详细信息</p>
+              
+              {/* 查询按钮 */}
+              <Button 
+                onClick={handleQuery}
+                disabled={!queryWord.trim() || isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-4 rounded-2xl shadow-lg"
+                size="lg"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                {isLoading ? '查询中...' : '查询单词'}
+              </Button>
             </div>
           </div>
-        </DialogHeader>
-
-        {/* 查询界面 */}
-        <div className="space-y-4">
-          <div className="flex space-x-2">
-            <Input
-              value={queryWord}
-              onChange={(e) => setQueryWord(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="输入要查询的单词..."
-              className="flex-1 text-base"
-              disabled={isLoading}
-            />
-          </div>
-          
-          <Button 
-            onClick={handleQuery}
-            disabled={!queryWord.trim() || isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-            size="lg"
-          >
-            <Search className="w-5 h-5 mr-2" />
-            {isLoading ? '查询中...' : '查询单词'}
-          </Button>
-        </div>
-
-        {/* 结果显示区域 */}
-        {wordResult && (
-          <div className="mt-6 space-y-4">
+        ) : (
+          // 结果显示界面 - 匹配截图样式
+          <div className="p-6">
             {wordResult.error ? (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="p-4">
-                  <p className="text-red-600">{wordResult.error}</p>
-                </CardContent>
-              </Card>
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+                <p className="text-red-600 text-center">{wordResult.error}</p>
+              </div>
             ) : (
-              <div className="space-y-4">
-                {/* 单词基本信息 */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <Book className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-bold text-gray-800">
+              <div className="space-y-6">
+                {/* 单词头部信息 - 匹配截图布局 */}
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
+                    <Book className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-baseline space-x-3 mb-2">
+                      <h1 className="text-3xl font-bold text-gray-900">
                         {wordResult.word || queryWord}
-                      </h3>
+                      </h1>
                       {wordResult.phonetic && (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-lg text-gray-500 font-mono">
                           /{wordResult.phonetic}/
                         </span>
                       )}
                     </div>
-                    
                     {wordResult.partOfSpeech && (
-                      <Badge variant="default" className="mb-3 text-white">
+                      <Badge 
+                        variant="secondary" 
+                        className="bg-purple-100 text-purple-800 text-sm px-3 py-1 rounded-full border-0"
+                      >
                         {wordResult.partOfSpeech}
                       </Badge>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
-                {/* 释义 */}
+                {/* 释义部分 */}
                 {wordResult.definition && (
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Globe className="w-4 h-4 text-green-600" />
-                        <h4 className="font-semibold text-gray-800">释义</h4>
-                      </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-5 h-5 text-orange-600" />
+                      <h3 className="text-lg font-bold text-gray-800">释义</h3>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
                       <p className="text-gray-700 leading-relaxed">
                         {wordResult.definition}
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
 
-                {/* 翻译 */}
+                {/* 翻译部分 */}
                 {wordResult.translation && (
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Globe className="w-4 h-4 text-green-600" />
-                        <h4 className="font-semibold text-gray-800">翻译</h4>
-                      </div>
-                      <p className="text-gray-700">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-5 h-5 text-green-600" />
+                      <h3 className="text-lg font-bold text-gray-800">翻译</h3>
+                    </div>
+                    <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+                      <p className="text-gray-700 leading-relaxed">
                         {wordResult.translation}
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )}
 
-                {/* 例句 */}
+                {/* 例句部分 */}
                 {wordResult.examples && wordResult.examples.length > 0 && (
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Lightbulb className="w-4 h-4 text-yellow-600" />
-                        <h4 className="font-semibold text-gray-800">例句</h4>
-                      </div>
-                      <div className="space-y-3">
-                        {wordResult.examples.map((example, index) => (
-                          <div key={index} className="bg-gray-50 p-3 rounded-md">
-                            <p className="text-gray-800 font-medium">
-                              {example.sentence || example}
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Lightbulb className="w-5 h-5 text-yellow-600" />
+                      <h3 className="text-lg font-bold text-gray-800">例句</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {wordResult.examples.map((example, index) => (
+                        <div key={index} className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                          <p className="text-blue-900 font-medium mb-2">
+                            {example.sentence || example}
+                          </p>
+                          {example.translation && (
+                            <p className="text-blue-700 text-sm">
+                              {example.translation}
                             </p>
-                            {example.translation && (
-                              <p className="text-sm text-gray-600 mt-1">
-                                {example.translation}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
