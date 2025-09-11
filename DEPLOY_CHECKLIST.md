@@ -3,7 +3,7 @@
 ## 准备工作已完成 ✅
 
 ### 已配置文件：
-- ✅ `vercel.json` - Vercel部署配置
+- ✅ `vercel.json` - Vercel部署配置（已修复functions/builds冲突）
 - ✅ `package.json` - Node.js依赖和构建脚本
 - ✅ `requirements.txt` - Python依赖
 - ✅ `supabase_init.sql` - 数据库初始化脚本
@@ -15,6 +15,9 @@
 - ✅ Python依赖安装正常
 - ✅ Flask应用启动成功
 - ✅ 数据库连接正常
+
+### 🔧 已修复的问题：
+- ✅ 修复了vercel.json中`functions`与`builds`属性冲突的问题
 
 ---
 
@@ -93,11 +96,8 @@ vercel --prod
 
 ## 🐛 常见问题解决
 
-### 1. 构建失败
-```bash
-# 本地重新构建测试
-npm run build
-```
+### 1. ~~构建失败: functions与builds冲突~~
+**✅ 已修复**: 移除了vercel.json中的functions属性，将includeFiles配置移到builds中
 
 ### 2. API错误
 ```bash
@@ -117,6 +117,20 @@ vercel env ls
 
 # 删除错误的环境变量
 vercel env rm VARIABLE_NAME
+```
+
+---
+
+## ⚡ 快速重新部署
+
+如果之前部署失败，现在配置已修复，可以直接重新部署：
+
+```bash
+# 重新部署到生产环境
+vercel --prod
+
+# 或者先测试部署
+vercel
 ```
 
 ---

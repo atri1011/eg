@@ -12,7 +12,8 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "maxLambdaSize": "50mb"
+        "maxLambdaSize": "50mb",
+        "includeFiles": "src/**"
       }
     }
   ],
@@ -42,10 +43,5 @@
     "DATABASE_URL": "@database_url",
     "SECRET_KEY": "@secret_key", 
     "OPENAI_API_KEY": "@openai_api_key"
-  },
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "src/**"
-    }
   }
 }
