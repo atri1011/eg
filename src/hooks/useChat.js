@@ -5,6 +5,7 @@ export const useChat = (config) => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showTranslations, setShowTranslations] = useState({});
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -17,6 +18,7 @@ export const useChat = (config) => {
 
   const clearMessages = () => {
     setMessages([]);
+    setCurrentConversationId(null);
     localStorage.removeItem('aiEnglishMessages');
   };
 
@@ -33,6 +35,32 @@ export const useChat = (config) => {
       ...prev,
       [messageId]: !prev[messageId]
     }));
+  };
+
+  const loadConversationHistory = async (conversationId) => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessages(data.messages);
+        setCurrentConversationId(conversationId);
+        setShowTranslations({});
+      } else {
+        console.error('加载会话历史失败:', data.error);
+        alert(data.error || '加载会话历史失败');
+      }
+    } catch (error) {
+      console.error('加载会话历史网络错误:', error);
+      alert('网络错误，无法加载会话历史');
+    }
+  };
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setCurrentConversationId(null);
+    setShowTranslations({});
+    setInputText('');
   };
 
   const sendMessage = async () => {
@@ -71,7 +99,8 @@ export const useChat = (config) => {
           config: {
             ...config,
             model: modelToUse
-          }
+          },
+          conversation_id: currentConversationId
         }),
       });
 
@@ -96,6 +125,11 @@ export const useChat = (config) => {
           );
           return [...updatedMessages, aiMessage];
         });
+
+        // 更新当前会话ID（如果是新会话）
+        if (data.conversation_id && data.conversation_id !== currentConversationId) {
+          setCurrentConversationId(data.conversation_id);
+        }
 
       } else {
         const errorMessage = {
@@ -138,5 +172,8 @@ export const useChat = (config) => {
     messagesEndRef,
     showTranslations,
     toggleTranslation,
+    currentConversationId,
+    loadConversationHistory,
+    startNewConversation,
   };
 };
