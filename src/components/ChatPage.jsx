@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useConfig } from '../hooks/useConfig';
 import { useChat } from '../hooks/useChat';
+import { useWordQuery } from '../hooks/useWordQuery';
 import SettingsDialog from './SettingsDialog';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -31,6 +32,8 @@ const ChatPage = () => {
     loadConversationHistory,
     startNewConversation,
   } = useChat(config);
+
+  const { queryWord } = useWordQuery(config);
 
   const handleDeleteConversation = (deletedConversationId) => {
     // 如果删除的是当前正在显示的会话，则清空消息列表
@@ -72,6 +75,7 @@ const ChatPage = () => {
             messages={messages}
             isLoading={isLoading}
             messagesEndRef={messagesEndRef}
+            onWordQuery={queryWord}
           />
           <ChatInput
             inputText={inputText}

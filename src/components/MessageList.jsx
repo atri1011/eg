@@ -1,11 +1,82 @@
-import React from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge.jsx';
-import { Sparkles, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
+import { Sparkles, MessageCircle, Search } from 'lucide-react';
+import WordQueryDialog from './WordQueryDialog.jsx';
 
-const MessageList = ({ messages, isLoading, messagesEndRef }) => {
+const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
+  const [selectedText, setSelectedText] = useState('');
+  const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 });
+  const [showQueryButton, setShowQueryButton] = useState(false);
+  const [showWordDialog, setShowWordDialog] = useState(false);
+  const [selectedContext, setSelectedContext] = useState('');
+  const selectionTimeoutRef = useRef(null);
+
+  // 检测选中的文本是否为英文单词
+  const isEnglishWord = useCallback((text) => {
+    if (!text || text.trim().length === 0) return false;
+    // 检测是否为单个英文单词（允许连字符和撇号）
+    const wordRegex = /^[a-zA-Z]+(?:[-'][a-zA-Z]+)*$/;
+    const trimmedText = text.trim();
+    return wordRegex.test(trimmedText) && trimmedText.length > 1;
+  }, []);
+
+  // 处理文本选择
+  const handleTextSelection = useCallback(() => {
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    if (selectedText && isEnglishWord(selectedText)) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      
+      // 获取选中文本的上下文（前后各50个字符）
+      const parentElement = range.commonAncestorContainer.parentElement;
+      const fullText = parentElement ? parentElement.textContent : '';
+      const startIndex = Math.max(0, fullText.indexOf(selectedText) - 50);
+      const endIndex = Math.min(fullText.length, fullText.indexOf(selectedText) + selectedText.length + 50);
+      const context = fullText.substring(startIndex, endIndex);
+      
+      setSelectedText(selectedText);
+      setSelectedContext(context);
+      setSelectionPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      });
+      setShowQueryButton(true);
+      
+      // 3秒后自动隐藏按钮
+      if (selectionTimeoutRef.current) {
+        clearTimeout(selectionTimeoutRef.current);
+      }
+      selectionTimeoutRef.current = setTimeout(() => {
+        setShowQueryButton(false);
+      }, 3000);
+    } else {
+      setShowQueryButton(false);
+    }
+  }, [isEnglishWord]);
+
+  // 处理查询按钮点击
+  const handleQueryClick = useCallback(() => {
+    setShowQueryButton(false);
+    setShowWordDialog(true);
+    window.getSelection().removeAllRanges();
+  }, []);
+
+  // 处理对话框关闭
+  const handleDialogClose = useCallback(() => {
+    setShowWordDialog(false);
+    setSelectedText('');
+    setSelectedContext('');
+  }, []);
+
   return (
-    <div className="flex-1 p-6 overflow-y-auto space-y-4">
+    <div 
+      className="flex-1 p-6 overflow-y-auto space-y-4" 
+      onMouseUp={handleTextSelection}
+    >
       {messages.length === 0 ? (
         <div className="text-center text-gray-500 mt-8">
           <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -101,6 +172,36 @@ const MessageList = ({ messages, isLoading, messagesEndRef }) => {
         </div>
       )}
       <div ref={messagesEndRef} />
+
+      {/* 悬浮查询按钮 */}
+      {showQueryButton && (
+        <div
+          className="fixed z-50 animate-in fade-in-50 zoom-in-95"
+          style={{
+            left: `${selectionPosition.x}px`,
+            top: `${selectionPosition.y}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <Button
+            size="sm"
+            onClick={handleQueryClick}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg border border-white/20 backdrop-blur-sm"
+          >
+            <Search className="w-3 h-3 mr-1" />
+            查询单词
+          </Button>
+        </div>
+      )}
+
+      {/* 单词查询对话框 */}
+      <WordQueryDialog
+        isOpen={showWordDialog}
+        onClose={handleDialogClose}
+        selectedWord={selectedText}
+        context={selectedContext}
+        onWordQuery={onWordQuery}
+      />
     </div>
   );
 };
