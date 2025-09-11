@@ -18,6 +18,7 @@
 
 ### 🔧 已修复的问题：
 - ✅ 修复了vercel.json中`functions`与`builds`属性冲突的问题
+- ✅ 移除了vercel.json中的`env`配置，环境变量现在通过CLI/面板设置
 
 ---
 
@@ -44,24 +45,43 @@ vercel
 - 是否在当前目录部署：选择`Yes`
 
 ### 4. 配置环境变量
-在Vercel面板中设置以下环境变量，或使用CLI：
+**重要：环境变量必须通过Vercel CLI或面板配置，不能在vercel.json中预定义**
 
+#### 方式1：使用Vercel CLI（推荐）
 ```bash
-# 方式1：使用Vercel CLI
-vercel env add DATABASE_URL
-# 输入你的Supabase连接字符串
+# 设置数据库连接
+vercel env add DATABASE_URL production
+# 输入你的Supabase连接字符串：postgres://postgres.xxxx:[password]@aws-0-xx.pooler.supabase.com:6543/postgres
 
-vercel env add OPENAI_API_KEY  
-# 输入你的OpenAI API密钥
+# 设置OpenAI API密钥
+vercel env add OPENAI_API_KEY production  
+# 输入你的OpenAI API密钥：sk-xxxxxxxxxxxxxxxxxxxxxxxx
 
-vercel env add SECRET_KEY
-# 输入生成的Flask密钥
+# 设置Flask密钥
+vercel env add SECRET_KEY production
+# 输入生成的Flask密钥（见下方）
 ```
+
+#### 方式2：使用Vercel面板
+1. 访问 Vercel Dashboard
+2. 进入项目设置 → Environment Variables
+3. 添加以下环境变量：
+
+| 变量名 | 环境 | 值示例 |
+|--------|------|--------|
+| `DATABASE_URL` | Production | `postgres://postgres.xxx:[pwd]@aws-0-xx.pooler.supabase.com:6543/postgres` |
+| `OPENAI_API_KEY` | Production | `sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `SECRET_KEY` | Production | `生成的64字符随机字符串` |
 
 **生成Flask密钥：**
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
+
+**重要注意事项：**
+- ⚠️ 环境变量名区分大小写
+- ⚠️ 确保为 `production` 环境设置变量
+- ⚠️ 如果同时为preview/development设置，值应该相同
 
 ### 5. 配置Supabase数据库
 1. 在Supabase中运行 `supabase_init.sql` 脚本
@@ -99,7 +119,10 @@ vercel --prod
 ### 1. ~~构建失败: functions与builds冲突~~
 **✅ 已修复**: 移除了vercel.json中的functions属性，将includeFiles配置移到builds中
 
-### 2. API错误
+### 2. ~~环境变量引用不存在的Secret~~
+**✅ 已修复**: 移除了vercel.json中的env配置，环境变量现在必须通过Vercel CLI或面板手动设置
+
+### 3. API错误
 ```bash
 # 查看Vercel函数日志
 vercel logs --follow

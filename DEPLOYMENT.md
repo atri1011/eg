@@ -30,14 +30,19 @@
 #### 方式2：命令行配置
 ```bash
 # 设置数据库连接
-vercel env add DATABASE_URL
+vercel env add DATABASE_URL production
 
 # 设置OpenAI API密钥  
-vercel env add OPENAI_API_KEY
+vercel env add OPENAI_API_KEY production
 
 # 设置Flask密钥
-vercel env add SECRET_KEY
+vercel env add SECRET_KEY production
 ```
+
+**重要提示：**
+- 每个环境变量都需要指定环境（production/preview/development）
+- 环境变量名区分大小写，必须完全匹配
+- 不要在 `vercel.json` 中预定义环境变量引用
 
 ### 3. 生成Flask密钥
 
