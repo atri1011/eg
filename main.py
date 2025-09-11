@@ -39,6 +39,14 @@ database_url = os.environ.get('DATABASE_URL')
 if database_url:
     database_url = resolve_database_url_to_ipv4(database_url)
 
+    # Convert relative database path to absolute path
+    if database_url.startswith('sqlite:///'):
+        db_path = database_url.replace('sqlite:///', '')
+        if not os.path.isabs(db_path):
+            project_root = os.path.dirname(os.path.abspath(__file__))
+            absolute_db_path = os.path.join(project_root, db_path)
+            database_url = f'sqlite:///{absolute_db_path}'
+
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
@@ -58,3 +66,10 @@ def serve(path):
             return send_from_directory(static_folder_path, 'index.html')
         else:
             return "index.html not found", 404
+
+
+if __name__ == '__main__':
+    # Use environment variable for port or default to 5001
+    port = int(os.environ.get('PORT', 5001))
+    # Use 0.0.0.0 to be accessible from outside the container
+    app.run(debug=True, host='0.0.0.0', port=port)

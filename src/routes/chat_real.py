@@ -109,7 +109,17 @@ def get_detailed_corrections(text, api_base, api_key, model):
                 time.sleep(retry_delay)
                 continue
 
+            print(f"[DEBUG] 详细修正API响应状态码: {response.status_code}")
+            print(f"[DEBUG] 详细修正API响应头: {response.headers}")
+            print(f"[DEBUG] 详细修正API响应原始内容: {response.text}")
+            
             response.raise_for_status()
+            
+            # 检查响应内容是否为空
+            if not response.text.strip():
+                print("[ERROR] API响应内容为空")
+                raise Exception("API响应内容为空")
+
             result = response.json()
             content = result["choices"][0]["message"]["content"].strip()
             print(f"[DEBUG] 详细修正原始响应: {content}")
@@ -298,7 +308,9 @@ def get_conversations():
         for conv in conversations:
             # 获取最后一条消息作为预览
             last_message = Message.query.filter_by(conversation_id=conv.id).order_by(Message.created_at.desc()).first()
-            last_message_content = last_message.content[:50] + "..." if last_message and len(last_message.content) > 50 else (last_message.content if last_message else "")
+            last_message_content = ""
+            if last_message:
+                last_message_content = last_message.content[:50] + "..." if len(last_message.content) > 50 else last_message.content
             
             conversations_data.append({
                 'id': conv.id,
