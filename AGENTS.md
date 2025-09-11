@@ -24,11 +24,12 @@ AI 英语学习助手是一个 Web 应用，旨在帮助用户通过与 AI 进�
     - **图标**: [Lucide React](https://lucide.dev/)
 - **后端**:
     - **框架**: [Flask](https://flask.palletsprojects.com/)
-    - **数据库**: [SQLite](https://www.sqlite.org/) with [SQLAlchemy](https://www.sqlalchemy.org/)
+    - **数据库**: [Supabase (PostgreSQL)](https://supabase.com/) with [SQLAlchemy](https://www.sqlalchemy.org/)
     - **AI 集成**: [OpenAI API](https://platform.openai.com/docs/api-reference)
 - **部署**:
-    - 前端静态文件由 Flask 服务。
-    - 后端由 WSGI 服务器（如 Gunicorn）运行。
+    - **平台**: [Vercel](https://vercel.com/)
+    - 前端作为静态站点部署。
+    - 后端作为 Serverless Function 部署。
 
 ## 项目结构
 
@@ -176,19 +177,103 @@ npm run build
 
 ### 部署步骤
 
-1.  **准备生产环境**: 配置一个 WSGI 服务器（如 Gunicorn）来运行 Flask 应用。
-2.  **配置环境变量**: 设置必要的环境变量，如数据库路径和 OpenAI API 密钥。
-3.  **执行部署**: 运行 WSGI 服务器。
-4.  **验证部署**: 访问应用的 URL，检查功能是否正常。
+1.  **连接到 Vercel**: 将你的代码仓库连接到 Vercel 账户。
+2.  **配置项目**: Vercel 将会自动检测到项目类型。确保框架预设为 "Vite"，并根据需要调整构建命令和输出目录。
+3.  **配置环境变量**: 在 Vercel 项目设置中，添加以下环境变量：
+    - `DATABASE_URL`: 你的 Supabase 数据库连接字符串。
+    - `OPENAI_API_KEY`: 你的 OpenAI API 密钥。
+    - `SECRET_KEY`: 一个用于 Flask 会话的密钥。
+4.  **执行部署**: 触发 Vercel 部署。Vercel 将会自动构建和部署你的应用。
+5.  **验证部署**: 访问 Vercel 提供的 URL，检查应用功能是否正常。
 
 ### 环境变量
 
 ```env
-# 必要的环境变量
+# Vercel 环境变量
 OPENAI_API_KEY=your_openai_api_key
-DATABASE_URL=sqlite:///database/app.db
+DATABASE_URL=your_supabase_connection_string
 SECRET_KEY=a_secure_secret_key
 ```
+
+## 详细部署教程
+
+本教程将指导您完成将此项目部署到 Vercel 并连接到 Supabase 数据库的全过程。
+
+### 前提条件
+
+- 一个 [GitHub](https://github.com/) 账户。
+- 一个 [Vercel](https://vercel.com/) 账户，并已关联到您的 GitHub 账户。
+- 一个 [Supabase](https://supabase.com/) 账户。
+- 您的 [OpenAI API 密钥](https://platform.openai.com/api-keys)。
+- 本地已安装 [Python](https://www.python.org/) 和 [Node.js](https://nodejs.org/) 环境。
+
+---
+
+### 步骤 1: 将代码推送到 GitHub
+
+Vercel 通过关联 GitHub 仓库来部署项目。
+
+1.  在您的 GitHub 上创建一个新的空仓库。
+2.  将本项目代码推送到您刚创建的仓库。如果您是从零开始，可以使用以下命令：
+    ```bash
+    git init
+    git add .
+    git commit -m "Initial commit"
+    git remote add origin [你的 GitHub 仓库 URL]
+    git push -u origin main
+    ```
+
+---
+
+### 步骤 2: 创建和配置 Supabase 项目
+
+1.  登录 [Supabase](https://app.supabase.com/)，点击 "New project" 创建一个新项目。
+2.  项目创建后，导航到 "Project Settings" > "Database"。
+3.  在 "Connection string" 部分，复制 **URI**。它看起来像这样：`postgres://postgres:[YOUR-PASSWORD]@[...].supabase.co:5432/postgres`。**请妥善保管此字符串，下一步会用到。**
+
+---
+
+### 步骤 3: 初始化 Supabase 数据库
+
+在部署应用之前，我们需要在 Supabase 数据库中创建所需的表。
+
+1.  在您的本地计算机上，打开一个终端，进入项目根目录。
+2.  **重要**: 将您从 Supabase 复制的数据库连接字符串设置为一个环境变量。
+    -   在 Windows (CMD) 上:
+        ```cmd
+        set DATABASE_URL="postgres://postgres:[YOUR-PASSWORD]@[...].supabase.co:5432/postgres"
+        ```
+    -   在 macOS / Linux 或 Windows (PowerShell) 上:
+        ```bash
+        $env:DATABASE_URL="postgres://postgres:[YOUR-PASSWORD]@[...].supabase.co:5432/postgres"
+        ```
+3.  运行数据库初始化脚本：
+    ```bash
+    python init_db.py
+    ```
+    您应该会看到 "Creating database tables..." 和 "Database tables created." 的输出。
+4.  （可选）您可以登录 Supabase，进入 "Table Editor"，确认 `conversation` 和 `message` 表已被成功创建。
+
+---
+
+### 步骤 4: 创建和配置 Vercel 项目
+
+1.  登录 [Vercel](https://vercel.com/dashboard)，点击 "Add New..." > "Project"。
+2.  从列表中选择您在步骤 1 中创建的 GitHub 仓库，点击 "Import"。
+3.  Vercel 会自动检测到这是一个 Vite 前端项目。由于我们已经添加了 `vercel.json` 配置文件，Vercel 会知道如何正确构建前端和部署后端的 Serverless Function。
+4.  在部署之前，展开 "Environment Variables" 部分，添加以下三个环境变量：
+    -   `DATABASE_URL`: 粘贴您在步骤 2 中从 Supabase 复制的数据库连接字符串。
+    -   `OPENAI_API_KEY`: 您的 OpenAI API 密钥。
+    -   `SECRET_KEY`: 输入一个长而随机的字符串，用于 Flask 的会话安全。
+5.  点击 "Deploy" 按钮。
+
+---
+
+### 步骤 5: 验证部署
+
+Vercel 将开始构建和部署您的应用。这个过程可能需要几分钟。完成后，Vercel 会为您提供一个唯一的 URL (例如 `your-project-name.vercel.app`)。
+
+访问此 URL，检查应用是否可以正常加载，并尝试发送消息以测试 AI 对话和数据库功能是否正常工作。如果一切顺利，恭喜您部署成功！
 
 ## 性能优化
 

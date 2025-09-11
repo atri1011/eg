@@ -19,15 +19,13 @@ app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(chat_bp, url_prefix='/api')
 
 # uncomment if you need to use database
-# Use DATABASE_URL from environment variables if available, otherwise fall back to SQLite
-database_url = os.environ.get('DATABASE_URL', f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}")
-if database_url.startswith("postgres://"):
+# Use DATABASE_URL from environment variables
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
-with app.app_context():
-    db.create_all()
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -44,7 +42,3 @@ def serve(path):
             return send_from_directory(static_folder_path, 'index.html')
         else:
             return "index.html not found", 404
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
