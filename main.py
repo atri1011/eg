@@ -25,31 +25,9 @@ app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(chat_bp, url_prefix='/api')
 
 # uncomment if you need to use database
-# Use DATABASE_URL from environment variables and force IPv4
+# Use DATABASE_URL from environment variables
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
-    try:
-        parsed_url = urlparse(database_url)
-        hostname = parsed_url.hostname
-        if hostname:
-            # Force IPv4 resolution by finding the first IPv4 address
-            addr_info = socket.getaddrinfo(hostname, None)
-            ipv4_address = None
-            for family, _, _, _, sockaddr in addr_info:
-                if family == socket.AF_INET:
-                    ipv4_address = sockaddr[0]
-                    break
-            
-            if ipv4_address:
-                # Reconstruct the netloc with the IPv4 address
-                new_netloc = parsed_url.netloc.replace(hostname, ipv4_address)
-                # Rebuild the URL
-                database_url = urlunparse(parsed_url._replace(netloc=new_netloc))
-    except (socket.gaierror, TypeError) as e:
-        print(f"Could not resolve hostname, falling back to original DATABASE_URL. Error: {e}")
-        # Fallback to the original URL if resolution fails
-        pass
-
     # SQLAlchemy requires 'postgresql' as the scheme, not 'postgres'
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
