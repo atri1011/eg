@@ -23,8 +23,4 @@
       "dest": "/dist/$1"
     }
   ],
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "SECRET_KEY": "@secret-key"
-  }
 }
