@@ -4,7 +4,6 @@ export const useChat = (config) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showTranslations, setShowTranslations] = useState({});
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const messagesEndRef = useRef(null);
 
@@ -30,13 +29,6 @@ export const useChat = (config) => {
     return { english: response, chinese: null };
   };
 
-  const toggleTranslation = (messageId) => {
-    setShowTranslations(prev => ({
-      ...prev,
-      [messageId]: !prev[messageId]
-    }));
-  };
-
   const loadConversationHistory = async (conversationId) => {
     try {
       const response = await fetch(`/api/conversations/${conversationId}/messages`);
@@ -45,7 +37,6 @@ export const useChat = (config) => {
       if (data.success) {
         setMessages(data.messages);
         setCurrentConversationId(conversationId);
-        setShowTranslations({});
       } else {
         console.error('加载会话历史失败:', data.error);
         alert(data.error || '加载会话历史失败');
@@ -59,7 +50,6 @@ export const useChat = (config) => {
   const startNewConversation = () => {
     setMessages([]);
     setCurrentConversationId(null);
-    setShowTranslations({});
     setInputText('');
   };
 
@@ -170,8 +160,6 @@ export const useChat = (config) => {
     clearMessages,
     handleKeyPress,
     messagesEndRef,
-    showTranslations,
-    toggleTranslation,
     currentConversationId,
     loadConversationHistory,
     startNewConversation,

@@ -27,8 +27,6 @@ const ChatPage = () => {
     clearMessages,
     handleKeyPress,
     messagesEndRef,
-    showTranslations,
-    toggleTranslation,
     currentConversationId,
     loadConversationHistory,
     startNewConversation,
@@ -74,8 +72,6 @@ const ChatPage = () => {
             messages={messages}
             isLoading={isLoading}
             messagesEndRef={messagesEndRef}
-            showTranslations={showTranslations}
-            toggleTranslation={toggleTranslation}
           />
           <ChatInput
             inputText={inputText}

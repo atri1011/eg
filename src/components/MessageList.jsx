@@ -1,10 +1,9 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
-import { Eye, EyeOff, Sparkles, MessageCircle } from 'lucide-react';
+import { Sparkles, MessageCircle } from 'lucide-react';
 
-const MessageList = ({ messages, isLoading, messagesEndRef, showTranslations, toggleTranslation }) => {
+const MessageList = ({ messages, isLoading, messagesEndRef }) => {
   return (
     <div className="flex-1 p-6 overflow-y-auto space-y-4">
       {messages.length === 0 ? (
@@ -29,22 +28,12 @@ const MessageList = ({ messages, isLoading, messagesEndRef, showTranslations, to
               
               {message.type === 'ai' && message.translation && (
                 <div className="mt-2 pt-2 border-t border-blue-500/50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">中文意思</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleTranslation(message.id)}
-                      className="h-6 px-2 text-gray-400 hover:text-white"
-                    >
-                      {showTranslations[message.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                    </Button>
-                  </div>
-                  {showTranslations[message.id] && (
-                    <div className="text-sm text-gray-200 mt-1 p-2 bg-blue-500/50 rounded">
+                  <span className="text-xs text-gray-400">中文意思</span>
+                  <div className="translation-container mt-1">
+                    <div className="translation-content text-sm text-black p-2 rounded">
                       {message.translation}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
               

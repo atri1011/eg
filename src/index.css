@@ -95,3 +95,18 @@
     --tw-prose-td-borders: theme('colors.gray.300');
   }
 }
+@layer components {
+  .translation-container {
+    position: relative;
+  }
+
+  .translation-content {
+    transition: filter 0.3s ease;
+  }
+
+  .translation-container:not(:hover) .translation-content {
+    filter: blur(4px);
+    -webkit-filter: blur(4px);
+    cursor: pointer;
+  }
+}
