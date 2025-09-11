@@ -30,14 +30,23 @@ database_url = os.environ.get('DATABASE_URL')
 if database_url:
     try:
         parsed_url = urlparse(database_url)
-        if parsed_url.hostname:
-            # Force IPv4 resolution
-            ipv4_address = socket.gethostbyname(parsed_url.hostname)
-            # Reconstruct the netloc with the IPv4 address
-            new_netloc = parsed_url.netloc.replace(parsed_url.hostname, ipv4_address)
-            # Rebuild the URL
-            database_url = urlunparse(parsed_url._replace(netloc=new_netloc))
-    except (socket.gaierror, TypeError):
+        hostname = parsed_url.hostname
+        if hostname:
+            # Force IPv4 resolution by finding the first IPv4 address
+            addr_info = socket.getaddrinfo(hostname, None)
+            ipv4_address = None
+            for family, _, _, _, sockaddr in addr_info:
+                if family == socket.AF_INET:
+                    ipv4_address = sockaddr[0]
+                    break
+            
+            if ipv4_address:
+                # Reconstruct the netloc with the IPv4 address
+                new_netloc = parsed_url.netloc.replace(hostname, ipv4_address)
+                # Rebuild the URL
+                database_url = urlunparse(parsed_url._replace(netloc=new_netloc))
+    except (socket.gaierror, TypeError) as e:
+        print(f"Could not resolve hostname, falling back to original DATABASE_URL. Error: {e}")
         # Fallback to the original URL if resolution fails
         pass
 
