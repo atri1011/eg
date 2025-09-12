@@ -348,102 +348,17 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
     grammar_name = grammar_point.get('name', '')
     grammar_description = grammar_point.get('description', '')
     
-    # 获取语法规则作为上下文
-    rules_context = ""
-    if 'rules' in grammar_point:
-        rules_context = "\n语法规则：\n"
-        for rule in grammar_point['rules']:
-            rules_context += f"- {rule.get('title', '')}: {rule.get('content', '')}\n"
-            if 'examples' in rule:
-                rules_context += f"  例句: {', '.join(rule['examples'])}\n"
-    
-    system_prompt = f"""你是一个专业的英语语法练习题生成助手。请根据指定的语法点生成高质量的练习题。
+    # 简化系统提示以降低API负载
+    system_prompt = f"""生成{count}道关于"{grammar_name}"的{difficulty_cn}英语练习题，返回JSON格式：
 
-**任务要求：**
-- 语法点：{grammar_name} - {grammar_description}
-- 题目数量：{count}道
-- 难度级别：{difficulty_cn}
-{rules_context}
+[{{"id":"ai-ex-1","type":"fill-blank","question":"题目","answer":"答案","explanation":"解释","difficulty":"{difficulty}"}}]
 
-**题目类型要求：**
-1. fill-blank（填空题）- 30-40%
-2. multiple-choice（选择题）- 30-40%
-3. correction（改错题）- 20-30%
-
-**输出格式要求：**
-必须返回一个有效的JSON数组，每个练习题包含以下字段：
-- id: 唯一标识符（如 "ai-ex-1", "ai-ex-2"）
-- type: 题目类型（"fill-blank", "multiple-choice", "correction"）
-- question: 题目描述或问题
-- answer: 正确答案（填空题和改错题用字符串，选择题用数字索引）
-- explanation: 详细的中文解释
-- difficulty: 难度级别（"{difficulty}"）
-
-**对于不同题型的具体要求：**
-
-1. fill-blank（填空题）：
-   - question: 包含下划线的句子，如 "She _____ (work) in a hospital."
-   - answer: 填入的正确答案，如 "works"
-
-2. multiple-choice（选择题）：
-   - question: 选择题问题
-   - options: 4个选项的数组
-   - answer: 正确答案的索引（0, 1, 2, 3）
-
-3. correction（改错题）：
-   - question: 固定文本 "请修正下面句子中的错误"
-   - sentence: 包含错误的句子
-   - correctSentence: 修正后的正确句子
-   - answer: 与correctSentence相同
-
-**示例输出格式：**
-```json
-[
-  {{
-    "id": "ai-ex-1",
-    "type": "fill-blank", 
-    "question": "She _____ (work) in a hospital every day.",
-    "answer": "works",
-    "explanation": "第三人称单数主语在一般现在时中，动词需要加-s或-es。",
-    "difficulty": "{difficulty}"
-  }},
-  {{
-    "id": "ai-ex-2",
-    "type": "multiple-choice",
-    "question": "Choose the correct sentence:",
-    "options": [
-      "I am go to school.", 
-      "I go to school.", 
-      "I going to school.", 
-      "I goes to school."
-    ],
-    "answer": 1,
-    "explanation": "在一般现在时中，主语I后面应该使用动词原形go。",
-    "difficulty": "{difficulty}"
-  }},
-  {{
-    "id": "ai-ex-3",
-    "type": "correction",
-    "question": "请修正下面句子中的错误",
-    "sentence": "He don't like coffee.",
-    "correctSentence": "He doesn't like coffee.",
-    "answer": "He doesn't like coffee.",
-    "explanation": "第三人称单数主语he的否定形式应该使用doesn't，而不是don't。",
-    "difficulty": "{difficulty}"
-  }}
-]
-```
-
-**重要注意事项：**
-1. 必须严格按照JSON格式输出，不要包含任何markdown代码块标记
-2. 所有字符串字段都要用双引号包围
-3. 确保JSON格式完全正确，可以直接解析
-4. 题目要紧密围绕指定的语法点
-5. 难度要符合用户选择的级别
-6. 解释要详细且易于理解
-7. 题目要有实用性和教学价值
-
-请立即生成{count}道关于"{grammar_name}"的{difficulty_cn}难度练习题："""
+要求：
+1. 题型包括fill-blank(填空)、multiple-choice(选择)、correction(改错)
+2. 选择题需要options数组和answer索引
+3. 改错题需要sentence和correctSentence字段
+4. 严格JSON格式，无markdown标记
+5. 围绕{grammar_name}语法点"""
 
     payload = {
         "model": model,
@@ -454,11 +369,11 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
             },
             {
                 "role": "user",
-                "content": f"请生成{count}道关于'{grammar_name}'的{difficulty_cn}难度语法练习题，严格按照JSON格式输出。"
+                "content": f"生成{count}道{grammar_name}练习题，JSON格式输出"
             }
         ],
-        "max_tokens": 2000,
-        "temperature": 0.7
+        "max_tokens": 1500,  # 降低资源消耗
+        "temperature": 0.3   # 降低随机性以提高稳定性
     }
     
     max_retries = 3
@@ -473,6 +388,15 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
                 print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")
                 time.sleep(retry_delay)
                 continue
+            elif response.status_code == 503:
+                print(f"[WARN] 收到 503 服务不可用错误。尝试降级请求参数...")
+                # 降级策略：减少token数量和简化请求
+                if payload["max_tokens"] > 800:
+                    payload["max_tokens"] = 800
+                    payload["temperature"] = 0.1
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay * 2)  # 更长的重试间隔
+                        continue
                 
             print(f"[DEBUG] 练习题生成API响应状态码: {response.status_code}")
             response.raise_for_status()
