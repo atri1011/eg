@@ -5,6 +5,92 @@ import { Button } from '@/components/ui/button.jsx';
 import { Sparkles, MessageCircle, Search } from 'lucide-react';
 import WordQueryDialog from './WordQueryDialog.jsx';
 
+// Function to render AI messages sentence by sentence with translation
+const renderSegmentedMessage = (content, translation) => {
+  if (!translation) {
+    return (
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown>{content}</ReactMarkdown>
+      </div>
+    );
+  }
+
+  const englishSentences = content.match(/(\S.+?[.?!])(?=\s+|$)/g) || [content];
+  const chineseSentences = translation.match(/([^。？！]+[。？！])/g) || [translation];
+
+  const chunks = [];
+  let tempEnglish = [];
+  let tempChinese = [];
+  let tempWordCount = 0;
+
+  englishSentences.forEach((sentence, index) => {
+    const trimmedSentence = sentence.trim();
+    if (!trimmedSentence) return;
+
+    const sentenceWordCount = trimmedSentence.split(/\s+/).length;
+    const chineseSentence = chineseSentences[index] ? chineseSentences[index].trim() : '';
+
+    if (sentenceWordCount > 8) {
+      if (tempEnglish.length > 0) {
+        chunks.push({ english: tempEnglish.join(' '), chinese: tempChinese.join(' ') });
+        tempEnglish = [];
+        tempChinese = [];
+        tempWordCount = 0;
+      }
+      chunks.push({ english: trimmedSentence, chinese: chineseSentence });
+    } else {
+      tempEnglish.push(trimmedSentence);
+      tempChinese.push(chineseSentence);
+      tempWordCount += sentenceWordCount;
+
+      if (tempWordCount > 8) {
+        chunks.push({ english: tempEnglish.join(' '), chinese: tempChinese.join(' ') });
+        tempEnglish = [];
+        tempChinese = [];
+        tempWordCount = 0;
+      }
+    }
+  });
+
+  if (tempEnglish.length > 0) {
+    chunks.push({ english: tempEnglish.join(' '), chinese: tempChinese.join(' ') });
+  }
+  
+  if (chunks.length <= 1) {
+    return (
+     <div className="prose prose-sm max-w-none">
+       <ReactMarkdown>{content}</ReactMarkdown>
+       {translation && (
+          <div className="mt-1">
+           <div className="translation-container">
+             <div className="translation-content text-sm text-black p-2 rounded mt-1">
+               {translation}
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   )
+ }
+
+  return chunks.map((chunk, index) => (
+    <div key={index} className="mb-2 last:mb-0">
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown>{chunk.english}</ReactMarkdown>
+      </div>
+      {chunk.chinese && (
+        <div className="mt-1">
+          <div className="translation-container">
+            <div className="translation-content text-sm text-black p-2 rounded mt-1">
+              {chunk.chinese}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  ));
+};
+
 const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
   const [selectedText, setSelectedText] = useState('');
   const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 });
@@ -93,19 +179,14 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
                 ? 'bg-red-100 text-red-800 border border-red-200'
                 : 'bg-white text-gray-800 border border-gray-200'
               }`}>
-              <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message' : ''}`}>
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </div>
-              
-              {message.type === 'ai' && message.translation && (
-                <div className="mt-2">
-                  <div className="translation-container">
-                    <div className="translation-content text-sm text-black p-2 rounded mt-2">
-                      {message.translation}
-                    </div>
+              {message.type === 'ai'
+                ? renderSegmentedMessage(message.content, message.translation)
+                : (
+                  <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message' : ''}`}>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
                   </div>
-                </div>
-              )}
+                )
+              }
             </div>
 
             {/* 优化与纠错显示 */}
