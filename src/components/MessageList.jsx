@@ -191,7 +191,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
 
             {/* 优化与纠错显示 */}
             {message.type === 'user' && message.corrections && Object.keys(message.corrections).length > 0 && (
-              <div className="mt-2 max-w-[85%] md:max-w-xs lg:max-w-xl w-full">
+              <div className="mt-2 max-w-[85%] w-auto">
                 <div className="bg-white border border-gray-200 rounded-lg p-3">
                   <div>
                     <div className="flex items-center text-sm text-yellow-600 mb-2">
