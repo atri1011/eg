@@ -102,7 +102,7 @@ def get_detailed_corrections(text, api_base, api_key, model):
                 "content": text
             }
         ],
-        "max_tokens": 1000,
+        "max_tokens": 1000000,
         "temperature": 0.1
     }
 
@@ -261,7 +261,7 @@ def chat():
                 },
                 *messages_for_api
             ],
-            "max_tokens": 1000
+            "max_tokens": 100000
         }
 
         chat_response = requests.post(OPENAI_CHAT_COMPLETIONS_URL.format(api_base=api_base), headers=headers, json=chat_payload, timeout=30)
@@ -302,15 +302,15 @@ def generate_grammar_exercises():
     config = data.get("config", {})
     settings = data.get("settings", {})
     
-    print(f"[DEBUG] 收到生成练习题请求: 语法点={grammar_point.get('name')}, 数量={settings.get('count')}, 难度={settings.get('difficulty')}")
-    
     if not grammar_point or not config:
         return jsonify({"success": False, "error": "语法点或配置信息缺失"}), 400
         
     api_key = config.get("apiKey")
     api_base = config.get("apiBase")
-    model = config.get("model")
     
+    # 优先使用 customModel，如果不存在或为空，则使用 model
+    model = config.get("customModel") if config.get("customModel") else config.get("model")
+
     if not api_key or not api_base or not model:
         return jsonify({"success": False, "error": "API配置信息不完整"}), 400
     
@@ -318,9 +318,10 @@ def generate_grammar_exercises():
     difficulty = settings.get("difficulty", "medium")
     
     try:
+        # 确保将 model 参数传递给 generate_exercises_with_ai 函数
         exercises = generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_key, model)
         return jsonify({
-            "success": True, 
+            "success": True,
             "exercises": exercises,
             "count": len(exercises)
         })
@@ -372,7 +373,7 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
                 "content": f"生成{count}道{grammar_name}练习题，JSON格式输出"
             }
         ],
-        "max_tokens": 1500,  # 降低资源消耗
+        "max_tokens": 8192,  # 设置一个合理的默认值
         "temperature": 0.3   # 降低随机性以提高稳定性
     }
     
@@ -391,8 +392,8 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
             elif response.status_code == 503:
                 print(f"[WARN] 收到 503 服务不可用错误。尝试降级请求参数...")
                 # 降级策略：减少token数量和简化请求
-                if payload["max_tokens"] > 800:
-                    payload["max_tokens"] = 800
+                if payload["max_tokens"] > 800000:
+                    payload["max_tokens"] = 800000
                     payload["temperature"] = 0.1
                     if attempt < max_retries - 1:
                         time.sleep(retry_delay * 2)  # 更长的重试间隔
