@@ -207,7 +207,7 @@ const GrammarLearningModule = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6 h-full overflow-y-auto">
       {currentView === 'overview' && renderOverview()}
       {currentView === 'detail' && selectedCategory && renderCategoryDetail()}
       {currentView === 'detail' && selectedGrammarPoint && (
