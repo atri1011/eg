@@ -187,6 +187,8 @@ with app.app_context():
         default_user = User.query.filter_by(id=1).first()
         if not default_user:
             default_user = User(id=1, username='default_user', email='default@example.com')
+            # 为默认用户设置密码
+            default_user.set_password('default123')
             db.session.add(default_user)
             db.session.commit()
             app.logger.info("Default user created successfully")

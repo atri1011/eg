@@ -4,12 +4,15 @@
 -- 启用UUID扩展（如果还没有启用）
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 用户表
+-- 用户表 (包含认证相关字段)
 CREATE TABLE IF NOT EXISTS "user" (
     id SERIAL PRIMARY KEY,
     username VARCHAR(80) UNIQUE NOT NULL,
     email VARCHAR(120) UNIQUE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_login TIMESTAMP WITH TIME ZONE
 );
 
 -- 对话表
