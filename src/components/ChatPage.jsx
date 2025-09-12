@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { MessageCircle, BookOpen, MessageSquare } from 'lucide-react';
+import { MessageCircle, BookOpen, MessageSquare, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useConfig } from '../hooks/useConfig';
 import { useChat } from '../hooks/useChat';
 import { useWordQuery } from '../hooks/useWordQuery';
+import { useAuth } from '../hooks/useAuth.jsx';
 import SettingsDialog from './SettingsDialog';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -15,6 +16,8 @@ import GrammarReferenceLibrary from './GrammarReferenceLibrary';
 const ChatPage = () => {
   const [currentView, setCurrentView] = useState('chat'); // 'chat' 或 'grammar'
   const [showGrammarReference, setShowGrammarReference] = useState(false);
+  
+  const { user, logout } = useAuth();
 
   const { 
     config, 
@@ -58,22 +61,64 @@ const ChatPage = () => {
             <MessageCircle className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
             <h1 className="text-lg md:text-2xl font-bold text-gray-800">AI英语学习助手</h1>
           </div>
-          {/* 移动端仅显示设置按钮 */}
-          <div className="md:hidden">
-            <SettingsDialog
-              config={config}
-              setConfig={setConfig}
-              saveConfig={saveConfig}
-              availableModels={availableModels}
-              isLoadingModels={isLoadingModels}
-              fetchModels={fetchModels}
-              setDefaultModels={setDefaultModels}
-            />
+          
+          {/* 用户信息和操作按钮 */}
+          <div className="flex items-center space-x-2">
+            {/* 桌面端用户信息 */}
+            <div className="hidden md:flex items-center space-x-2 mr-2">
+              <div className="flex items-center space-x-2 px-3 py-2 bg-white/50 rounded-lg">
+                <User className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">
+                  {user?.username || '用户'}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="text-gray-600 hover:text-red-600"
+                title="注销"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {/* 移动端仅显示设置按钮 */}
+            <div className="md:hidden">
+              <SettingsDialog
+                config={config}
+                setConfig={setConfig}
+                saveConfig={saveConfig}
+                availableModels={availableModels}
+                isLoadingModels={isLoadingModels}
+                fetchModels={fetchModels}
+                setDefaultModels={setDefaultModels}
+              />
+            </div>
           </div>
         </div>
 
         {/* 移动端导航 */}
         <div className="md:hidden mb-3">
+          {/* 移动端用户信息 */}
+          <div className="flex items-center justify-between mb-2 px-2">
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {user?.username || '用户'}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="text-gray-600 hover:text-red-600 p-1"
+              title="注销"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+          
           <div className="flex bg-white rounded-lg p-1 shadow-sm mb-2">
             <Button
               variant={currentView === 'chat' ? 'default' : 'ghost'}

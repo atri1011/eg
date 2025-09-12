@@ -2,6 +2,7 @@ import os
 import requests
 from flask import Blueprint, request, jsonify
 from src.models.user import db, Conversation, Message, User
+from src.utils.auth import auth_required, get_current_user
 import json
 import re
 import time
@@ -354,15 +355,17 @@ def get_detailed_corrections(text, api_base, api_key, model):
     raise Exception("所有重试尝试均失败")
 
 @chat_bp.route("/chat", methods=["POST"])
+@auth_required
 def chat():
     data = request.get_json()
     user_message = data.get("message")
     config = data.get("config", {})
     conversation_id = data.get("conversation_id")
     
-    print(f"[DEBUG] 收到用户消息: {user_message} (会话ID: {conversation_id})")
-
-    user_id = 1  # 假设固定用户
+    current_user = get_current_user()
+    user_id = current_user.id
+    
+    print(f"[DEBUG] 收到用户消息: {user_message} (会话ID: {conversation_id}, 用户ID: {user_id})")
     
     # 确保用户存在
     try:
@@ -692,9 +695,11 @@ def get_models():
     })
 
 @chat_bp.route("/conversations", methods=["GET"])
+@auth_required
 def get_conversations():
     """获取用户的会话列表"""
-    user_id = 1  # 假设固定用户，与chat接口保持一致
+    current_user = get_current_user()
+    user_id = current_user.id
     
     try:
         # 确保用户存在
@@ -742,9 +747,11 @@ def get_conversations():
         }), 500
 
 @chat_bp.route("/conversations/<int:conversation_id>/messages", methods=["GET"])
+@auth_required
 def get_conversation_messages(conversation_id):
     """获取指定会话的历史消息"""
-    user_id = 1  # 假设固定用户
+    current_user = get_current_user()
+    user_id = current_user.id
     
     try:
         # 确保用户存在
@@ -790,9 +797,11 @@ def get_conversation_messages(conversation_id):
         return jsonify({"success": False, "error": f"获取历史消息失败: {str(e)}"}), 500
 
 @chat_bp.route("/conversations/<int:conversation_id>", methods=["DELETE"])
+@auth_required
 def delete_conversation(conversation_id):
     """删除指定的会话"""
-    user_id = 1  # 假设固定用户
+    current_user = get_current_user()
+    user_id = current_user.id
     
     try:
         # 确保用户存在

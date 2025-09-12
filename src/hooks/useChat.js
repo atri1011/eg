@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useAuth } from './useAuth.jsx';
 
 export const useChat = (config) => {
   const [messages, setMessages] = useState([]);
@@ -6,6 +7,8 @@ export const useChat = (config) => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const messagesEndRef = useRef(null);
+  
+  const { getAuthHeaders } = useAuth();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -31,7 +34,12 @@ export const useChat = (config) => {
 
   const loadConversationHistory = async (conversationId) => {
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`);
+      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -83,6 +91,7 @@ export const useChat = (config) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders()
         },
         body: JSON.stringify({
           message: inputText,

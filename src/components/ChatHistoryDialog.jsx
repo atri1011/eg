@@ -2,19 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { History, MessageCircle, Trash2, Calendar } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth.jsx';
 
 const ChatHistoryDialog = ({ onLoadConversation, onDeleteConversation, className }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const { getAuthHeaders } = useAuth();
 
   const fetchConversations = async () => {
     setIsLoading(true);
     setError('');
     
     try {
-      const response = await fetch('/api/conversations');
+      const response = await fetch('/api/conversations', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      });
       const data = await response.json();
       
       if (data.success) {
@@ -39,7 +47,11 @@ const ChatHistoryDialog = ({ onLoadConversation, onDeleteConversation, className
 
     try {
       const response = await fetch(`/api/conversations/${conversationId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
       });
       
       const data = await response.json();

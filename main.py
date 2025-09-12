@@ -16,6 +16,7 @@ from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from src.models.user import db
 from src.routes.user import user_bp
+from src.routes.auth import auth_bp
 from src.routes.chat_real import chat_bp
 from src.routes.word_query import word_query_bp
 import logging
@@ -56,6 +57,7 @@ CORS(app,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
 app.register_blueprint(user_bp, url_prefix='/api')
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(chat_bp, url_prefix='/api')
 app.register_blueprint(word_query_bp, url_prefix='/api')
 

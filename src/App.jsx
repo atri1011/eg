@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { AuthProvider, useAuth } from '@/hooks/useAuth.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { MessageCircle, Sparkles } from 'lucide-react';
 import ChatPage from './components/ChatPage';
+import AuthForm from './components/AuthForm';
 
 const WelcomeScreen = ({ onStart }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-center p-4">
@@ -19,14 +21,33 @@ const WelcomeScreen = ({ onStart }) => (
   </div>
 );
 
-function App() {
-  const [isChatVisible, setChatVisible] = useState(false);
+const AppContent = () => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (!isChatVisible) {
-    return <WelcomeScreen onStart={() => setChatVisible(true)} />;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <MessageCircle className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthForm />;
   }
 
   return <ChatPage />;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
 
 export default App;
