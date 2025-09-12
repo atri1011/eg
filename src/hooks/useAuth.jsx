@@ -48,6 +48,13 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ identifier, password })
       });
 
+      // 检查响应的Content-Type
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('服务器返回非JSON响应:', response.status, response.statusText);
+        return { success: false, error: '服务器响应格式错误，请稍后重试' };
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -60,6 +67,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('登录失败:', error);
+      if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
+        return { success: false, error: '服务器响应格式错误，请检查网络连接' };
+      }
       return { success: false, error: '登录失败，请稍后重试' };
     }
   };
@@ -74,6 +84,13 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ username, email, password })
       });
 
+      // 检查响应的Content-Type
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('服务器返回非JSON响应:', response.status, response.statusText);
+        return { success: false, error: '服务器响应格式错误，请稍后重试' };
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -86,6 +103,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('注册失败:', error);
+      if (error.name === 'SyntaxError' && error.message.includes('JSON')) {
+        return { success: false, error: '服务器响应格式错误，请检查网络连接' };
+      }
       return { success: false, error: '注册失败，请稍后重试' };
     }
   };
