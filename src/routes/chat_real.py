@@ -237,7 +237,8 @@ def get_detailed_corrections(text, api_base, api_key, model):
 
 **重要指令:**
 *   **必须返回JSON:** 无论输入如何，都必须返回一个符合上述结构的有效JSON对象。
-*   **无错误处理:** 如果句子完全正确，`corrected_sentence` 应与 `original_sentence` 相同，`corrections` 列表必须为空 `[]`，并可以提供一句鼓励性的 `overall_comment`。
+*   **宽容度要求**: 在进行语法分析时，请适当放宽标准。忽略单纯的大小写错误（例如，句子开头的'i'应视为'I'）和常见的标点符号遗漏（例如，句末的句号）。除非这些问题严重影响句子理解，否则不应将其标记为错误。
+*   **无错误处理:** 如果句子在宽容标准下被视为正确，`corrected_sentence` 应与 `original_sentence` 相同，`corrections` 列表必须为空 `[]`，并可以提供一句鼓励性的 `overall_comment`。
 *   **严禁额外文本:** 绝对不要在JSON对象之外返回任何文本、注释或解释。
 
 **示例:**
@@ -818,7 +819,7 @@ def delete_conversation(conversation_id):
         
         print(f"[DEBUG] 会话已删除，ID: {conversation_id}")
         return jsonify({
-            "success": True, 
+            "success": True,
             "message": "会话删除成功"
         })
     
@@ -826,3 +827,27 @@ def delete_conversation(conversation_id):
         db.session.rollback()
         print(f"[ERROR] 删除会话失败: {e}")
         return jsonify({"success": False, "error": f"删除会话失败: {str(e)}"}), 500
+
+@chat_bp.route("/verify-grammar-answer", methods=["POST"])
+def verify_grammar_answer():
+    """验证用户提交的语法练习答案"""
+    data = request.get_json()
+    user_answer = data.get("userAnswer", "")
+    correct_answer = data.get("correctAnswer", "")
+
+    if not user_answer or not correct_answer:
+        return jsonify({"success": False, "error": "缺少答案信息"}), 400
+
+    # 预处理：忽略大小写、标点和首尾空格
+    processed_user_answer = re.sub(r'[^\w\s]', '', user_answer).lower().strip()
+    processed_correct_answer = re.sub(r'[^\w\s]', '', correct_answer).lower().strip()
+    
+    # 比较答案
+    is_correct = processed_user_answer == processed_correct_answer
+    
+    print(f"[DEBUG] 答案验证: 用户答案='{user_answer}' (处理后: '{processed_user_answer}'), 正确答案='{correct_answer}' (处理后: '{processed_correct_answer}'), 结果: {is_correct}")
+
+    return jsonify({
+        "success": True,
+        "is_correct": is_correct
+    })
