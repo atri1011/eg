@@ -49,13 +49,74 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="flex-1 flex flex-col p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <MessageCircle className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-800">AI英语学习助手</h1>
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="flex-1 flex flex-col p-2 md:p-4">
+        {/* 顶部标题栏 */}
+        <div className="flex items-center justify-between mb-3 md:mb-6">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <MessageCircle className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+            <h1 className="text-lg md:text-2xl font-bold text-gray-800">AI英语学习助手</h1>
           </div>
+          {/* 移动端仅显示设置按钮 */}
+          <div className="md:hidden">
+            <SettingsDialog
+              config={config}
+              setConfig={setConfig}
+              saveConfig={saveConfig}
+              availableModels={availableModels}
+              isLoadingModels={isLoadingModels}
+              fetchModels={fetchModels}
+            />
+          </div>
+        </div>
+
+        {/* 移动端导航 */}
+        <div className="md:hidden mb-3">
+          <div className="flex bg-white rounded-lg p-1 shadow-sm mb-2">
+            <Button
+              variant={currentView === 'chat' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('chat')}
+              className="flex-1 flex items-center justify-center"
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              对话
+            </Button>
+            <Button
+              variant={currentView === 'grammar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('grammar')}
+              className="flex-1 flex items-center justify-center"
+            >
+              <BookOpen className="w-4 h-4 mr-1" />
+              语法
+            </Button>
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGrammarReference(true)}
+              className="flex-1 flex items-center justify-center"
+            >
+              <BookOpen className="w-4 h-4 mr-1" />
+              语法参考
+            </Button>
+            <NewChatButton 
+              onNewChat={startNewConversation}
+              disabled={isLoading}
+              className="flex-1"
+            />
+            <ChatHistoryDialog
+              onLoadConversation={loadConversationHistory}
+              onDeleteConversation={handleDeleteConversation}
+              className="flex-1"
+            />
+          </div>
+        </div>
+
+        {/* 桌面端导航 */}
+        <div className="hidden md:flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             {/* 视图切换按钮 */}
             <div className="flex bg-white rounded-lg p-1 shadow-sm">
@@ -99,6 +160,8 @@ const ChatPage = () => {
               onLoadConversation={loadConversationHistory}
               onDeleteConversation={handleDeleteConversation}
             />
+          </div>
+          <div>
             <SettingsDialog
               config={config}
               setConfig={setConfig}

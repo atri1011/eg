@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { History, MessageCircle, Trash2, Calendar } from 'lucide-react';
 
-const ChatHistoryDialog = ({ onLoadConversation, onDeleteConversation }) => {
+const ChatHistoryDialog = ({ onLoadConversation, onDeleteConversation, className }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,20 +94,21 @@ const ChatHistoryDialog = ({ onLoadConversation, onDeleteConversation }) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <History className="w-4 h-4 mr-2" />
-          聊天记录
+        <Button variant="outline" size="sm" className={`mobile-tap ${className || ''}`}>
+          <History className="w-4 h-4 mr-1 md:mr-2" />
+          <span className="hidden sm:inline md:inline">聊天记录</span>
+          <span className="sm:hidden">记录</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-lg max-h-[85vh] md:max-h-[80vh] overflow-hidden flex flex-col mx-2 w-[calc(100vw-1rem)] sm:w-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
+          <DialogTitle className="flex items-center text-lg md:text-xl">
             <MessageCircle className="w-5 h-5 mr-2" />
             聊天记录
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto mobile-scroll">\
           {isLoading && (
             <div className="flex justify-center items-center py-8">
               <div className="text-gray-500">加载中...</div>

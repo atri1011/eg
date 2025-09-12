@@ -109,4 +109,63 @@
     -webkit-filter: blur(4px);
     cursor: pointer;
   }
+
+  /* 移动端优化 */
+  @media (max-width: 768px) {
+    /* 禁用悬停效果，使用点击触发 */
+    .translation-container:not(:hover) .translation-content {
+      filter: none;
+      -webkit-filter: none;
+    }
+    
+    /* 移动端文本选择优化 */
+    .selectable-text {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+    }
+    
+    /* 移动端滚动优化 */
+    .mobile-scroll {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .mobile-scroll::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* 移动端按钮点击反馈 */
+    .mobile-tap {
+      -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    /* 移动端输入框优化 */
+    .mobile-input {
+      font-size: 16px; /* 防止 iOS Safari 缩放 */
+      -webkit-appearance: none;
+      border-radius: 8px;
+    }
+  }
+
+  /* 触摸设备特殊处理 */
+  @media (hover: none) and (pointer: coarse) {
+    .translation-container {
+      cursor: default;
+    }
+    
+    .translation-container .translation-content {
+      filter: none !important;
+      -webkit-filter: none !important;
+    }
+    
+    /* 触摸设备上的按钮样式 */
+    button, .btn {
+      min-height: 44px; /* Apple 推荐的最小点击区域 */
+      min-width: 44px;
+    }
+  }
 }

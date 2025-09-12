@@ -13,40 +13,43 @@ const ChatInput = ({
   config 
 }) => {
   return (
-    <div className="p-4 border-t border-gray-200 bg-white/60">
+    <div className="p-3 md:p-4 border-t border-gray-200 bg-white/60">
       <div className="flex space-x-2">
         <Textarea
           placeholder="输入你想练习的英语句子..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="flex-1 min-h-[60px] resize-none"
+          className="flex-1 min-h-[50px] md:min-h-[60px] resize-none text-sm md:text-base mobile-input mobile-tap"
           disabled={isLoading}
         />
         <Button
           onClick={sendMessage}
           disabled={!inputText.trim() || isLoading}
-          className="self-end"
+          className="self-end px-3 md:px-4 mobile-tap"
+          size="sm"
         >
           <Send className="w-4 h-4" />
         </Button>
       </div>
       
-      <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
-       <span>按 Enter 发送, Shift + Enter 换行</span>
-       <div className="flex items-center space-x-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mt-2 text-xs md:text-sm text-gray-500 space-y-1 md:space-y-0">
+        <span className="order-2 md:order-1">按 Enter 发送, Shift + Enter 换行</span>
+        <div className="flex items-center space-x-2 md:space-x-4 order-1 md:order-2">
           {config.apiKey ? (
-            <Badge variant="outline" className="text-green-600 border-green-600">
+            <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
               <CheckCircle className="w-3 h-3 mr-1" />
               API已配置
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-orange-600 border-orange-600">
+            <Badge variant="outline" className="text-orange-600 border-orange-600 text-xs">
               <AlertCircle className="w-3 h-3 mr-1" />
               请配置API
             </Badge>
           )}
-          <span>{config.customModel || config.model}</span>
+          <span className="text-xs truncate max-w-[120px] md:max-w-none">
+            {config.customModel || config.model}
+          </span>
         </div>
       </div>
     </div>
