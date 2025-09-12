@@ -3,8 +3,7 @@ node_modules
 
 # Database
 database/app.db
-database/init_auth_db.py
-database/auth_migration.py
+
 # Temporary files
 temp.txt
 
