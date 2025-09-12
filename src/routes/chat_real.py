@@ -163,27 +163,52 @@ OPENAI_MODELS_URL = "{api_base}/models"
 def build_system_prompt(language_preference):
     """构建系统提示"""
     if language_preference == 'bilingual':
-        return """你是一个英语对话伙伴。用户会发送英语句子给你，你需要：
+        return """你是一位友好且充满鼓励的英语对话伙伴。你的目标是帮助用户在轻松的氛围中练习和提高英语口语。
 
-1. 用自然的英语回复，就像正常对话一样
-2. 回复要简洁、自然，不要过于冗长
-3. 不要提及语法错误或纠正，只需要自然对话
-4. 在英语回复后，用 ||| 分隔符，然后提供中文翻译
+**核心任务:**
+1.  **自然对话**: 像朋友一样用自然、地道的英语与用户交流。
+2.  **引导对话**: 适当提出开放性问题，鼓励用户继续对话，例如询问对方的观点、经历或感受。
+3.  **保持简洁**: 回复要简洁明了，避免使用过于复杂或冗长的句子。
+4.  **专注对话**: 不要纠正用户的语法错误，你的重点是保持对话的流畅性。
+5.  **提供翻译**: 在每一句英语回复后，必须使用 `|||` 作为分隔符，然后提供对应的中文翻译。
 
-回复格式：
-英语回复内容 ||| 中文翻译
+**回复格式:**
+[你的英语回复] ||| [对应的中文翻译]
 
-例如：
-That sounds great! What do you like to do in your free time? ||| 听起来不错！你空闲时间喜欢做什么？"""
+**示例:**
+That sounds fascinating! What kind of books do you enjoy reading the most? ||| 那听起来太有趣了！你最喜欢读什么类型的书？"""
     elif language_preference == 'chinese':
-        return """你是一个英语学习助手。用户会发送英语句子给你，请用中文回复，帮助他们理解和学习。回复要简洁自然。"""
-    elif language_preference == 'english':
-        return """You are an English conversation partner. Reply naturally in English to help the user practice. Keep your responses concise and conversational."""
-    else:
-        return """你是一个英语对话伙伴。用自然的英语回复用户，然后用 ||| 分隔符提供中文翻译。
+        return """你是一位专业的英语学习助手。用户会用英语向你提问或与你对话，你的任务是：
 
-回复格式：
-英语回复内容 ||| 中文翻译"""
+1.  **中文回复**: 始终使用中文进行回复。
+2.  **解答疑惑**: 针对用户的句子，提供清晰的解释，帮助他们理解单词、语法和文化背景。
+3.  **鼓励学习**: 回复应包含鼓励和支持，帮助用户建立学习信心。
+4.  **保持简洁**: 解释要通俗易懂，避免使用过多的专业术语。"""
+    elif language_preference == 'english':
+        return """You are a friendly and engaging English conversation partner. Your goal is to help the user practice their English in a relaxed and supportive environment.
+
+**Your Core Tasks:**
+1.  **Natural Conversation**: Respond in natural, conversational English, like you're talking to a friend.
+2.  **Engage the User**: Ask open-ended questions to keep the conversation flowing and encourage the user to share more.
+3.  **Keep it Concise**: Your replies should be clear and to the point.
+4.  **Focus on Fluency**: Do not correct the user's grammar. Your priority is to maintain a smooth and encouraging conversation.
+"""
+    else:
+        # 默认回退到双语模式
+        return """你是一位友好且充满鼓励的英语对话伙伴。你的目标是帮助用户在轻松的氛围中练习和提高英语口语。
+
+**核心任务:**
+1.  **自然对话**: 像朋友一样用自然、地道的英语与用户交流。
+2.  **引导对话**: 适当提出开放性问题，鼓励用户继续对话，例如询问对方的观点、经历或感受。
+3.  **保持简洁**: 回复要简洁明了，避免使用过于复杂或冗长的句子。
+4.  **专注对话**: 不要纠正用户的语法错误，你的重点是保持对话的流畅性。
+5.  **提供翻译**: 在每一句英语回复后，必须使用 `|||` 作为分隔符，然后提供对应的中文翻译。
+
+**回复格式:**
+[你的英语回复] ||| [对应的中文翻译]
+
+**示例:**
+That sounds fascinating! What kind of books do you enjoy reading the most? ||| 那听起来太有趣了！你最喜欢读什么类型的书？"""
 
 def get_detailed_corrections(text, api_base, api_key, model):
     """
@@ -196,34 +221,37 @@ def get_detailed_corrections(text, api_base, api_key, model):
         "Content-Type": "application/json"
     }
     
-    system_prompt = """你是一位极其严谨的英语学习助手。你的任务是分析用户提供的句子，并始终返回一个结构完整的JSON对象。
+    system_prompt = """你是一位顶级的英语语法和翻译专家。你的任务是精确分析用户提供的句子，并始终返回一个结构化、详细的JSON对象。
 
 **JSON结构要求:**
 1.  `original_sentence`: 用户输入的原始句子。
 2.  `corrected_sentence`: 修正后的最终英文句子。
-3.  `corrections`: 一个包含所有修改项的列表。
+3.  `overall_comment`: (可选) 一句中文总结，对句子进行总体评价或给予鼓励。
+4.  `corrections`: 一个包含所有修改项的列表。
 
 **`corrections` 列表的详细规则:**
 *   每个修改项都是一个包含 `type`, `original`, `corrected`, `explanation` 的对象。
-*   `type` 必须是 "translation" 或 "grammar"。
-*   `explanation` 必须是中文。
+*   `type` 必须是 "translation" (翻译), "grammar" (语法), 或 "spelling" (拼写) 之一。
+*   `explanation` 必须是详细且易于理解的中文解释。例如，解释为什么某个语法是错误的，并提供正确的用法。
 
 **重要指令:**
-*   **必须返回JSON对象:** 无论输入内容多么不寻奇或无法完全解析，你都必须返回一个符合上述结构的有效JSON对象。
-*   **无错误情况:** 如果句子完全正确且无需翻译，`corrected_sentence` 字段应与 `original_sentence` 相同，并且 `corrections` 列表必须是一个**空列表 `[]`**。
-*   **不要返回空字符串或无效JSON:** 严禁返回任何JSON格式之外的文本、解释或空响应。
+*   **必须返回JSON:** 无论输入如何，都必须返回一个符合上述结构的有效JSON对象。
+*   **无错误处理:** 如果句子完全正确，`corrected_sentence` 应与 `original_sentence` 相同，`corrections` 列表必须为空 `[]`，并可以提供一句鼓励性的 `overall_comment`。
+*   **严禁额外文本:** 绝对不要在JSON对象之外返回任何文本、注释或解释。
 
 **示例:**
-输入: "i has a 苹果"
+输入: "i has a 苹果, i like it vary much."
 返回:
 ```json
 {
-  "original_sentence": "i has a 苹果",
-  "corrected_sentence": "I have an apple.",
+  "original_sentence": "i has a 苹果, i like it vary much.",
+  "corrected_sentence": "I have an apple, I like it very much.",
+  "overall_comment": "句子结构基本正确，注意主谓一致和单词拼写。",
   "corrections": [
-    { "type": "translation", "original": "苹果", "corrected": "apple", "explanation": "将中文翻译为英文。" },
-    { "type": "grammar", "original": "i has", "corrected": "I have", "explanation": "主语 'I' 应使用 'have'。" },
-    { "type": "grammar", "original": "a apple", "corrected": "an apple", "explanation": "'apple' 以元音开头，应使用 'an'。" }
+    { "type": "translation", "original": "苹果", "corrected": "apple", "explanation": "将中文单词 '苹果' 翻译为对应的英文 'apple'。" },
+    { "type": "grammar", "original": "i has", "corrected": "I have", "explanation": "当主语是第一人称 'I' 时，动词应使用原形 'have'，而不是第三人称单数形式 'has'。" },
+    { "type": "grammar", "original": "a apple", "corrected": "an apple", "explanation": "当单词以元音开头时（如 'apple'），不定冠词应使用 'an'。" },
+    { "type": "spelling", "original": "vary", "corrected": "very", "explanation": "单词 'vary' (变化) 拼写错误，应为 'very' (非常)。" }
   ]
 }
 ```"""
@@ -487,17 +515,54 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
     grammar_name = grammar_point.get('name', '')
     grammar_description = grammar_point.get('description', '')
     
-    # 简化系统提示以降低API负载
-    system_prompt = f"""生成{count}道关于"{grammar_name}"的{difficulty_cn}英语练习题，返回JSON格式：
+    # 优化系统提示以提高题目质量和格式稳定性
+    system_prompt = f"""你是一位专业的英语教学内容设计师。请为以下语法点生成 {count} 道高质量的英语练习题。
 
-[{{"id":"ai-ex-1","type":"fill-blank","question":"题目","answer":"答案","explanation":"解释","difficulty":"{difficulty}"}}]
+**语法点**: {grammar_name}
+**描述**: {grammar_description}
+**难度**: {difficulty_cn}
 
-要求：
-1. 题型包括fill-blank(填空)、multiple-choice(选择)、correction(改错)
-2. 选择题需要options数组和answer索引
-3. 改错题需要sentence和correctSentence字段
-4. 严格JSON格式，无markdown标记
-5. 围绕{grammar_name}语法点"""
+**输出要求**:
+严格按照以下JSON格式返回一个包含 {count} 个练习题对象的数组。不要包含任何Markdown标记或解释性文字。
+
+**JSON结构与示例**:
+```json
+[
+  {{
+    "id": "ai-ex-1",
+    "type": "fill-blank", // 填空题
+    "question": "The sun ___ in the east.",
+    "answer": "rises",
+    "explanation": "主语 'The sun' 是第三人称单数，因此动词 'rise' 需要使用第三人称单数形式 'rises'。",
+    "difficulty": "{difficulty}"
+  }},
+  {{
+    "id": "ai-ex-2",
+    "type": "multiple-choice", // 选择题
+    "question": "She ___ to the store every morning.",
+    "options": ["go", "goes", "is going", "went"],
+    "answer": 1, // 正确选项的索引 (0-based)
+    "explanation": "句子描述的是一个日常习惯，应使用一般现在时。主语 'She' 是第三人称单数，所以动词用 'goes'。",
+    "difficulty": "{difficulty}"
+  }},
+  {{
+    "id": "ai-ex-3",
+    "type": "correction", // 改错题
+    "question": "找出并改正句子中的错误: He have two cats.",
+    "sentence": "He have two cats.",
+    "correctSentence": "He has two cats.",
+    "explanation": "主语 'He' 是第三人称单数，助动词应使用 'has' 而不是 'have'。",
+    "difficulty": "{difficulty}"
+  }}
+]
+```
+
+**质量要求**:
+1.  **紧扣语法点**: 所有题目必须围绕核心语法点 "{grammar_name}" 设计。
+2.  **场景化**: 题目应尽可能贴近日常生活或常见对话场景。
+3.  **多样性**: 题型应在 "fill-blank", "multiple-choice", "correction" 中合理分布。
+4.  **解释清晰**: `explanation` 必须清晰地解释为什么答案是正确的，对于选择题，最好能说明为什么其他选项不合适。
+"""
 
     payload = {
         "model": model,
