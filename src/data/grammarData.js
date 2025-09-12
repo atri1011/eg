@@ -238,6 +238,146 @@ export const grammarCategories = {
             explanation: '现在完成进行时需要been + 动词-ing形式'
           }
         ]
+      },
+      {
+        id: 'past-perfect',
+        name: '过去完成时',
+        description: '表示过去某个时间之前已经完成的动作',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'past-perfect-structure',
+            title: '基本结构',
+            content: '主语 + had + 过去分词',
+            examples: [
+              'I had finished my work before he arrived.',
+              'She had already left when I got there.',
+              'They had never seen such a beautiful place.'
+            ]
+          },
+          {
+            id: 'past-perfect-usage',
+            title: '使用场合',
+            content: '1. 过去的过去 2. 与过去时间搭配 3. 在间接引语中',
+            examples: [
+              'By the time I arrived, the meeting had started.',
+              'He said he had been to Paris.',
+              'I realized I had forgotten my keys.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'I had went there before.',
+            correction: 'I had gone there before.',
+            explanation: '过去完成时需要使用过去分词gone，不是过去式went'
+          }
+        ]
+      },
+      {
+        id: 'future-perfect',
+        name: '将来完成时',
+        description: '表示在将来某个时间之前将要完成的动作',
+        level: 'advanced',
+        rules: [
+          {
+            id: 'future-perfect-structure',
+            title: '基本结构',
+            content: '主语 + will/shall + have + 过去分词',
+            examples: [
+              'I will have finished the report by tomorrow.',
+              'She will have graduated by next year.',
+              'They will have completed the project by then.'
+            ]
+          },
+          {
+            id: 'future-perfect-usage',
+            title: '使用场合',
+            content: '表示在将来某时间点之前完成的动作，常与by连用',
+            examples: [
+              'By 2030, I will have worked here for 10 years.',
+              'She will have left by the time you arrive.',
+              'By next month, we will have moved to the new office.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'I will have went there by tomorrow.',
+            correction: 'I will have gone there by tomorrow.',
+            explanation: '将来完成时需要使用过去分词gone'
+          }
+        ]
+      },
+      {
+        id: 'past-future',
+        name: '过去将来时',
+        description: '表示从过去某个时间点看将要发生的动作',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'past-future-structure',
+            title: '基本结构',
+            content: '主语 + would/should + 动词原形',
+            examples: [
+              'He said he would come tomorrow.',
+              'She knew it would rain.',
+              'They thought the meeting would be cancelled.'
+            ]
+          },
+          {
+            id: 'past-future-usage',
+            title: '使用场合',
+            content: '1. 间接引语中 2. 虚拟语气中 3. 过去的计划或预测',
+            examples: [
+              'He promised he would help me.',
+              'If I were you, I would go.',
+              'She was sure she would succeed.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'He said he will come.',
+            correction: 'He said he would come.',
+            explanation: '间接引语中，将来时要变为过去将来时'
+          }
+        ]
+      },
+      {
+        id: 'future-continuous',
+        name: '将来进行时',
+        description: '表示将来某个时间点正在进行的动作',
+        level: 'advanced',
+        rules: [
+          {
+            id: 'future-continuous-structure',
+            title: '基本结构',
+            content: '主语 + will/shall + be + 现在分词(-ing)',
+            examples: [
+              'I will be working at 8 PM tomorrow.',
+              'She will be studying when you call.',
+              'They will be traveling next week.'
+            ]
+          },
+          {
+            id: 'future-continuous-usage',
+            title: '使用场合',
+            content: '1. 将来某时刻正在进行的动作 2. 将来的计划安排',
+            examples: [
+              'At this time tomorrow, I will be flying to Tokyo.',
+              'Don\'t call me at 9. I will be having dinner.',
+              'We will be living in a new house next year.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'I will be go there tomorrow.',
+            correction: 'I will be going there tomorrow.',
+            explanation: '将来进行时需要使用be + 动词-ing形式'
+          }
+        ]
       }
     ]
   },
@@ -430,6 +570,411 @@ export const grammarCategories = {
             mistake: 'He said that he is busy.',
             correction: 'He said that he was busy.',
             explanation: '间接引语中时态需要后移'
+          }
+        ]
+      },
+      {
+        id: 'non-finite-verbs',
+        name: '非谓语动词',
+        description: '不定式、动名词、现在分词和过去分词的用法',
+        level: 'advanced',
+        rules: [
+          {
+            id: 'infinitives',
+            title: '不定式 (to do)',
+            content: '作主语、宾语、定语、状语、宾补等成分',
+            examples: [
+              'To learn English is important. (主语)',
+              'I want to go home. (宾语)',
+              'I have something to tell you. (定语)',
+              'He came to help me. (目的状语)',
+              'I saw him enter the room. (宾补，省略to)'
+            ]
+          },
+          {
+            id: 'gerunds',
+            title: '动名词 (-ing)',
+            content: '具有名词特征，可作主语、宾语、表语等',
+            examples: [
+              'Swimming is good exercise. (主语)',
+              'I enjoy reading books. (宾语)',
+              'My hobby is collecting stamps. (表语)',
+              'Thank you for helping me. (介词宾语)'
+            ]
+          },
+          {
+            id: 'participles',
+            title: '分词 (现在分词-ing/过去分词-ed)',
+            content: '现在分词表示主动进行，过去分词表示被动完成',
+            examples: [
+              'The girl sitting there is my sister. (现在分词作定语)',
+              'The book written by him is popular. (过去分词作定语)',
+              'Seeing the teacher, the students stood up. (现在分词作状语)',
+              'Moved by the story, she cried. (过去分词作状语)'
+            ]
+          },
+          {
+            id: 'absolute-construction',
+            title: '独立主格结构',
+            content: '名词/代词 + 非谓语动词，作状语',
+            examples: [
+              'Weather permitting, we will go camping.',
+              'The work finished, we went home.',
+              'He entered the room, his hands trembling.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'I want go home.',
+            correction: 'I want to go home.',
+            explanation: 'want后面要用不定式to do'
+          },
+          {
+            mistake: 'I enjoy to read books.',
+            correction: 'I enjoy reading books.',
+            explanation: 'enjoy后面要用动名词doing'
+          },
+          {
+            mistake: 'The book writing by him is good.',
+            correction: 'The book written by him is good.',
+            explanation: '书是"被写"的，应该用过去分词written表示被动'
+          }
+        ]
+      },
+      {
+        id: 'inversion',
+        name: '倒装句',
+        description: '为了强调或语法需要而改变正常语序的句子',
+        level: 'advanced',
+        rules: [
+          {
+            id: 'partial-inversion',
+            title: '部分倒装',
+            content: '助动词/情态动词提前到主语前',
+            examples: [
+              'Never have I seen such a beautiful sunset.',
+              'Only when he arrived did we start the meeting.',
+              'Not only does he speak English, but also French.',
+              'So tired was he that he fell asleep immediately.'
+            ]
+          },
+          {
+            id: 'full-inversion',
+            title: '完全倒装',
+            content: '整个谓语动词提前到主语前',
+            examples: [
+              'Here comes the bus.',
+              'There stands a tall building.',
+              'Away flew the bird.',
+              'In the room sat an old man.'
+            ]
+          },
+          {
+            id: 'conditional-inversion',
+            title: '虚拟条件句倒装',
+            content: '省略if，将were/had/should提前',
+            examples: [
+              'Were I you, I would accept the offer.',
+              'Had he studied harder, he would have passed.',
+              'Should you need help, please call me.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'Never I have seen such a thing.',
+            correction: 'Never have I seen such a thing.',
+            explanation: '否定副词开头要用部分倒装：助动词+主语+实义动词'
+          }
+        ]
+      },
+      {
+        id: 'ellipsis',
+        name: '省略句',
+        description: '为了避免重复或简洁表达而省略某些成分的句子',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'simple-ellipsis',
+            title: '简单省略',
+            content: '省略主语、谓语或宾语等成分',
+            examples: [
+              'Glad to see you. (省略I am)',
+              'What about a cup of coffee? (省略having)',
+              'If necessary, I will help you. (省略it is)',
+              'When in Rome, do as the Romans do. (省略you are)'
+            ]
+          },
+          {
+            id: 'comparative-ellipsis',
+            title: '比较句中的省略',
+            content: '比较结构中常省略重复部分',
+            examples: [
+              'Tom is taller than Jim (is tall).',
+              'She works harder than I (work hard).',
+              'He has more books than she (has books).'
+            ]
+          },
+          {
+            id: 'infinitive-ellipsis',
+            title: '不定式的省略',
+            content: '为了避免重复，保留to而省略动词',
+            examples: [
+              'I asked him to stay, but he didn\'t want to (stay).',
+              'You can leave if you want to (leave).',
+              'She didn\'t go, although she ought to (have gone).'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'When I was young, my father taught me how to swim.',
+            correction: 'When young, my father taught me how to swim.',
+            explanation: '状语从句中主从句主语一致时可省略从句的主语和be动词'
+          }
+        ]
+      },
+      {
+        id: 'emphasis',
+        name: '强调句型',
+        description: '用来强调句子某一成分的特殊句型',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'it-cleft',
+            title: 'It强调句',
+            content: 'It is/was + 被强调部分 + that/who + 其他部分',
+            examples: [
+              'It was Tom who broke the window. (强调主语)',
+              'It was yesterday that I met him. (强调时间状语)',
+              'It is English that she teaches. (强调宾语)',
+              'It was in the park that we met. (强调地点状语)'
+            ]
+          },
+          {
+            id: 'what-cleft',
+            title: 'What强调句',
+            content: 'What + 主语 + 谓语 + is/was + 被强调部分',
+            examples: [
+              'What I need is your help.',
+              'What he said was true.',
+              'What surprised me was his honesty.',
+              'What matters most is your attitude.'
+            ]
+          },
+          {
+            id: 'auxiliary-do',
+            title: '助动词do强调',
+            content: '用do/does/did强调谓语动词',
+            examples: [
+              'I do love you. (强调love)',
+              'She does speak English well. (强调speak)',
+              'He did come yesterday. (强调come)'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'It was Tom which broke the window.',
+            correction: 'It was Tom who broke the window.',
+            explanation: '强调人时用who，强调物时用that'
+          },
+          {
+            mistake: 'It is in the park where we met.',
+            correction: 'It was in the park that we met.',
+            explanation: '强调句型用that，不是where'
+          }
+        ]
+      },
+      {
+        id: 'tag-questions',
+        name: '反义疑问句',
+        description: '在陈述句后加简短问句进行确认或征询意见',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'basic-rules',
+            title: '基本规则',
+            content: '前肯后否，前否后肯；时态、人称保持一致',
+            examples: [
+              'You are a student, aren\'t you?',
+              'He doesn\'t like coffee, does he?',
+              'They went home, didn\'t they?',
+              'She can swim, can\'t she?'
+            ]
+          },
+          {
+            id: 'special-cases',
+            title: '特殊情况',
+            content: '祈使句、感叹句、存在句的反义疑问句',
+            examples: [
+              'Let\'s go, shall we?',
+              'Let me help you, will you?',
+              'Open the door, will you?',
+              'There is nothing wrong, is there?'
+            ]
+          },
+          {
+            id: 'negative-words',
+            title: '含否定意义的词',
+            content: 'never, hardly, seldom等视为否定',
+            examples: [
+              'He never comes late, does he?',
+              'She hardly speaks English, does she?',
+              'You seldom go out, do you?'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'He is a teacher, isn\'t she?',
+            correction: 'He is a teacher, isn\'t he?',
+            explanation: '反义疑问句的人称要与陈述句主语一致'
+          },
+          {
+            mistake: 'Let\'s go, will we?',
+            correction: 'Let\'s go, shall we?',
+            explanation: 'Let\'s开头的祈使句，反义疑问句用shall we'
+          }
+        ]
+      },
+      {
+        id: 'comparison',
+        name: '比较结构',
+        description: '表示事物之间比较关系的各种句型结构',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'as-as',
+            title: 'as...as结构',
+            content: '表示同等程度的比较',
+            examples: [
+              'She is as tall as her sister.',
+              'He doesn\'t work as/so hard as she does.',
+              'This book is as interesting as that one.',
+              'Run as fast as you can.'
+            ]
+          },
+          {
+            id: 'comparative-superlative',
+            title: '比较级和最高级的特殊用法',
+            content: '比较级表示最高级含义',
+            examples: [
+              'He is taller than any other student in his class.',
+              'Nothing is more important than health.',
+              'The more you practice, the better you become.',
+              'He couldn\'t be happier. (= He is very happy)'
+            ]
+          },
+          {
+            id: 'multiple-comparison',
+            title: '倍数比较',
+            content: '表示倍数关系的比较结构',
+            examples: [
+              'This room is three times as large as that one.',
+              'This room is three times larger than that one.',
+              'This room is three times the size of that one.',
+              'The population has increased by three times.'
+            ]
+          },
+          {
+            id: 'progressive-comparison',
+            title: '递进比较',
+            content: 'the more...the more结构',
+            examples: [
+              'The more you eat, the fatter you become.',
+              'The harder you work, the more successful you will be.',
+              'The more I know him, the more I like him.'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'He is more taller than me.',
+            correction: 'He is taller than me.',
+            explanation: '比较级前不能加more，tall的比较级是taller'
+          },
+          {
+            mistake: 'This room is three times bigger as that one.',
+            correction: 'This room is three times as big as that one.',
+            explanation: '倍数比较要用three times as...as结构'
+          }
+        ]
+      },
+      {
+        id: 'fixed-patterns',
+        name: '固定句型与搭配',
+        description: '英语中的常见固定句型和习惯搭配',
+        level: 'intermediate',
+        rules: [
+          {
+            id: 'it-patterns',
+            title: 'It句型',
+            content: 'It作形式主语或形式宾语的常见句型',
+            examples: [
+              'It is + adj. + (for sb.) + to do sth.',
+              'It is + adj. + that从句',
+              'It takes sb. + time + to do sth.',
+              'It is + time + since/when/before从句',
+              'It seems/appears + that从句',
+              'It happens + that从句'
+            ]
+          },
+          {
+            id: 'there-be',
+            title: 'There be句型',
+            content: 'There be结构的各种变体和时态',
+            examples: [
+              'There is/are...',
+              'There was/were...',
+              'There will be...',
+              'There has/have been...',
+              'There seems/appears to be...',
+              'There is no doubt that...'
+            ]
+          },
+          {
+            id: 'causative-verbs',
+            title: '使役动词和感官动词',
+            content: 'make, let, have, see, hear, watch等的用法',
+            examples: [
+              'make sb. do sth. / make sb./sth. done',
+              'let sb. do sth.',
+              'have sb. do sth. / have sth. done',
+              'see/hear/watch sb. do sth. / doing sth.',
+              'feel sb./sth. do sth. / doing sth.'
+            ]
+          },
+          {
+            id: 'common-patterns',
+            title: '其他常见句型',
+            content: '高频固定表达和句式结构',
+            examples: [
+              'It is/was + 序数词 + time + that从句 (现在/过去完成时)',
+              'No sooner...than... / Hardly...when...',
+              'would rather...than...',
+              'prefer to do...rather than do...',
+              'can\'t help doing / can\'t help but do',
+              'be about to do...when...'
+            ]
+          }
+        ],
+        commonMistakes: [
+          {
+            mistake: 'It is easy for learn English.',
+            correction: 'It is easy to learn English.',
+            explanation: 'It is + adj. + to do句型中要用不定式'
+          },
+          {
+            mistake: 'I saw him to enter the room.',
+            correction: 'I saw him enter the room.',
+            explanation: '感官动词后用动词原形作宾补'
+          },
+          {
+            mistake: 'There have many students in the classroom.',
+            correction: 'There are many students in the classroom.',
+            explanation: 'There be句型不能用have替代'
           }
         ]
       }
@@ -1355,6 +1900,107 @@ export const practiceExercises = {
       sentence: 'well known',
       correctSentence: 'well-known',
       explanation: '复合形容词通常需要连字符',
+      difficulty: 'medium'
+    }
+  ],
+  // 添加新语法点的练习题
+  'past-perfect': [
+    {
+      id: 'ppf-ex-1',
+      type: 'fill-blank',
+      question: 'By the time I arrived, the meeting _____ (start).',
+      answer: 'had started',
+      explanation: '过去完成时表示过去的过去，用had + 过去分词',
+      difficulty: 'medium'
+    }
+  ],
+  'future-perfect': [
+    {
+      id: 'fp-grammar-ex-1',
+      type: 'fill-blank',
+      question: 'By tomorrow, I _____ (finish) the report.',
+      answer: 'will have finished',
+      explanation: '将来完成时表示将来某时间前完成的动作',
+      difficulty: 'hard'
+    }
+  ],
+  'past-future': [
+    {
+      id: 'paf-ex-1',
+      type: 'fill-blank',
+      question: 'He said he _____ (come) the next day.',
+      answer: 'would come',
+      explanation: '间接引语中，将来时要变为过去将来时',
+      difficulty: 'medium'
+    }
+  ],
+  'future-continuous': [
+    {
+      id: 'fc-ex-1',
+      type: 'fill-blank',
+      question: 'At this time tomorrow, I _____ (fly) to Tokyo.',
+      answer: 'will be flying',
+      explanation: '将来进行时表示将来某时刻正在进行的动作',
+      difficulty: 'hard'
+    }
+  ],
+  'non-finite-verbs': [
+    {
+      id: 'nfv-ex-1',
+      type: 'correction',
+      sentence: 'I want go home.',
+      correctSentence: 'I want to go home.',
+      explanation: 'want后面要用不定式to do',
+      difficulty: 'easy'
+    }
+  ],
+  'inversion': [
+    {
+      id: 'inv-ex-1',
+      type: 'correction',
+      sentence: 'Never I have seen such a thing.',
+      correctSentence: 'Never have I seen such a thing.',
+      explanation: '否定副词开头要用部分倒装：助动词+主语+实义动词',
+      difficulty: 'hard'
+    }
+  ],
+  'emphasis': [
+    {
+      id: 'emp-ex-1',
+      type: 'correction',
+      sentence: 'It was Tom which broke the window.',
+      correctSentence: 'It was Tom who broke the window.',
+      explanation: '强调人时用who，强调物时用that',
+      difficulty: 'medium'
+    }
+  ],
+  'tag-questions': [
+    {
+      id: 'tq-ex-1',
+      type: 'correction',
+      sentence: 'He is a teacher, isn\'t she?',
+      correctSentence: 'He is a teacher, isn\'t he?',
+      explanation: '反义疑问句的人称要与陈述句主语一致',
+      difficulty: 'easy'
+    }
+  ],
+  'comparison': [
+    {
+      id: 'comp-ex-1',
+      type: 'correction',
+      sentence: 'He is more taller than me.',
+      correctSentence: 'He is taller than me.',
+      explanation: '比较级前不能加more，tall的比较级是taller',
+      difficulty: 'medium'
+    }
+  ],
+  'fixed-patterns': [
+    {
+      id: 'fp-pattern-ex-1',
+      type: 'correction',
+      sentence: 'It is easy for learn English.',
+      correctSentence: 'It is easy to learn English.',
+      explanation: 'It is + adj. + to do句型中要用不定式',
       difficulty: 'medium'
     }
   ]
