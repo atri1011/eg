@@ -21,3 +21,5 @@ nul
 .bmad-core/
 .claude/commands/BMad/
 docs/
+.kilocodemodes
+.roomodes
