@@ -9,7 +9,7 @@ python database/init_auth_db.py
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -43,7 +43,7 @@ def create_default_users():
                 username='admin',
                 email='admin@example.com',
                 is_active=True,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
             admin_user.set_password('admin123')
             
@@ -52,7 +52,7 @@ def create_default_users():
                 username='demo',
                 email='demo@example.com', 
                 is_active=True,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
             demo_user.set_password('demo123')
             

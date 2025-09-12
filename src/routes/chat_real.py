@@ -1,4 +1,3 @@
-import os
 import requests
 from flask import Blueprint, request, jsonify
 from src.models.user import db, Conversation, Message, User
