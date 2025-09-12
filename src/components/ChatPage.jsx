@@ -1,5 +1,6 @@
-import React from 'react';
-import { MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { MessageCircle, BookOpen, MessageSquare } from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
 import { useConfig } from '../hooks/useConfig';
 import { useChat } from '../hooks/useChat';
 import { useWordQuery } from '../hooks/useWordQuery';
@@ -8,8 +9,13 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import ChatHistoryDialog from './ChatHistoryDialog';
 import NewChatButton from './NewChatButton';
+import GrammarLearningModule from './GrammarLearningModule';
+import GrammarReferenceLibrary from './GrammarReferenceLibrary';
 
 const ChatPage = () => {
+  const [currentView, setCurrentView] = useState('chat'); // 'chat' 或 'grammar'
+  const [showGrammarReference, setShowGrammarReference] = useState(false);
+
   const { 
     config, 
     setConfig, 
@@ -51,6 +57,40 @@ const ChatPage = () => {
             <h1 className="text-2xl font-bold text-gray-800">AI英语学习助手</h1>
           </div>
           <div className="flex items-center space-x-3">
+            {/* 视图切换按钮 */}
+            <div className="flex bg-white rounded-lg p-1 shadow-sm">
+              <Button
+                variant={currentView === 'chat' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentView('chat')}
+                className="flex items-center"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                对话练习
+              </Button>
+              <Button
+                variant={currentView === 'grammar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setCurrentView('grammar')}
+                className="flex items-center"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                语法学习
+              </Button>
+            </div>
+
+            {/* 语法参考库按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGrammarReference(true)}
+              className="flex items-center"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              语法参考
+            </Button>
+
+            {/* 原有的按钮 */}
             <NewChatButton 
               onNewChat={startNewConversation}
               disabled={isLoading}
@@ -70,23 +110,38 @@ const ChatPage = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col bg-white/50 rounded-xl shadow-md overflow-hidden">
-          <MessageList
-            messages={messages}
-            isLoading={isLoading}
-            messagesEndRef={messagesEndRef}
-            onWordQuery={queryWord}
-          />
-          <ChatInput
-            inputText={inputText}
-            setInputText={setInputText}
-            handleKeyPress={handleKeyPress}
-            sendMessage={sendMessage}
-            isLoading={isLoading}
-            config={config}
-          />
+        {/* 内容区域 */}
+        <div className="flex-1 overflow-hidden">
+          {currentView === 'chat' ? (
+            <div className="flex-1 flex flex-col bg-white/50 rounded-xl shadow-md overflow-hidden h-full">
+              <MessageList
+                messages={messages}
+                isLoading={isLoading}
+                messagesEndRef={messagesEndRef}
+                onWordQuery={queryWord}
+              />
+              <ChatInput
+                inputText={inputText}
+                setInputText={setInputText}
+                handleKeyPress={handleKeyPress}
+                sendMessage={sendMessage}
+                isLoading={isLoading}
+                config={config}
+              />
+            </div>
+          ) : (
+            <div className="bg-white/50 rounded-xl shadow-md overflow-hidden h-full">
+              <GrammarLearningModule />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* 语法参考库对话框 */}
+      <GrammarReferenceLibrary
+        isOpen={showGrammarReference}
+        onClose={() => setShowGrammarReference(false)}
+      />
     </div>
   );
 };
