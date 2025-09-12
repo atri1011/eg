@@ -22,7 +22,8 @@ const ChatPage = () => {
     saveConfig, 
     availableModels, 
     isLoadingModels, 
-    fetchModels 
+    fetchModels,
+    setDefaultModels
   } = useConfig();
   
   const {
@@ -66,6 +67,7 @@ const ChatPage = () => {
               availableModels={availableModels}
               isLoadingModels={isLoadingModels}
               fetchModels={fetchModels}
+              setDefaultModels={setDefaultModels}
             />
           </div>
         </div>
@@ -169,6 +171,7 @@ const ChatPage = () => {
               availableModels={availableModels}
               isLoadingModels={isLoadingModels}
               fetchModels={fetchModels}
+              setDefaultModels={setDefaultModels}
             />
           </div>
         </div>

@@ -5,8 +5,146 @@ from src.models.user import db, Conversation, Message, User
 import json
 import re
 import time
+import logging
 
 chat_bp = Blueprint("chat", __name__)
+logger = logging.getLogger(__name__)
+
+def detect_api_provider(api_base):
+    """根据API Base URL检测API提供商类型"""
+    if not api_base:
+        return 'openai'
+    
+    api_base_lower = api_base.lower()
+    
+    # OpenAI官方或兼容的API
+    if 'openai.com' in api_base_lower or 'api.openai.com' in api_base_lower:
+        return 'openai'
+    
+    # Anthropic Claude
+    elif 'anthropic.com' in api_base_lower:
+        return 'anthropic'
+    
+    # 智谱AI
+    elif 'bigmodel.cn' in api_base_lower or 'zhipuai' in api_base_lower:
+        return 'zhipu'
+    
+    # 月之暗面 Kimi
+    elif 'moonshot.cn' in api_base_lower:
+        return 'moonshot'
+    
+    # 豆包/字节跳动
+    elif 'volcengine.com' in api_base_lower or 'doubao' in api_base_lower:
+        return 'doubao'
+    
+    # DeepSeek
+    elif 'deepseek' in api_base_lower:
+        return 'deepseek'
+    
+    # Azure OpenAI
+    elif 'azure' in api_base_lower and 'openai' in api_base_lower:
+        return 'azure_openai'
+    
+    # 默认尝试OpenAI兼容格式
+    else:
+        return 'openai_compatible'
+
+def get_default_models_for_provider(provider):
+    """根据提供商返回默认模型列表"""
+    if provider == 'anthropic':
+        return [
+            {'id': 'claude-3-5-sonnet-20241022', 'name': 'Claude 3.5 Sonnet'},
+            {'id': 'claude-3-5-haiku-20241022', 'name': 'Claude 3.5 Haiku'},
+            {'id': 'claude-3-opus-20240229', 'name': 'Claude 3 Opus'},
+        ]
+    elif provider == 'zhipu':
+        return [
+            {'id': 'glm-4-plus', 'name': 'GLM-4 Plus'},
+            {'id': 'glm-4', 'name': 'GLM-4'},
+            {'id': 'glm-4-air', 'name': 'GLM-4 Air'},
+            {'id': 'glm-4-flash', 'name': 'GLM-4 Flash'},
+        ]
+    elif provider == 'moonshot':
+        return [
+            {'id': 'moonshot-v1-8k', 'name': 'Moonshot V1 8K'},
+            {'id': 'moonshot-v1-32k', 'name': 'Moonshot V1 32K'},
+            {'id': 'moonshot-v1-128k', 'name': 'Moonshot V1 128K'},
+        ]
+    elif provider == 'doubao':
+        return [
+            {'id': 'doubao-pro-32k', 'name': '豆包 Pro 32K'},
+            {'id': 'doubao-pro-128k', 'name': '豆包 Pro 128K'},
+            {'id': 'doubao-lite-32k', 'name': '豆包 Lite 32K'},
+        ]
+    elif provider == 'deepseek':
+        return [
+            {'id': 'deepseek-chat', 'name': 'DeepSeek Chat'},
+            {'id': 'deepseek-coder', 'name': 'DeepSeek Coder'},
+            {'id': 'deepseek-v3', 'name': 'DeepSeek V3'},
+        ]
+    else:
+        # 默认OpenAI模型
+        return [
+            {'id': 'gpt-4', 'name': 'GPT-4'},
+            {'id': 'gpt-4-turbo', 'name': 'GPT-4 Turbo'},
+            {'id': 'gpt-4o', 'name': 'GPT-4o'},
+            {'id': 'gpt-4o-mini', 'name': 'GPT-4o Mini'},
+            {'id': 'gpt-3.5-turbo', 'name': 'GPT-3.5 Turbo'},
+        ]
+
+def try_fetch_models_from_api(api_base, api_key, provider):
+    """尝试从API获取模型列表"""
+    try:
+        # 根据提供商构建正确的URL和headers
+        if provider == 'anthropic':
+            if not api_base.endswith('/'):
+                api_base += '/'
+            models_url = api_base + 'v1/models'
+            headers = {
+                'x-api-key': api_key,
+                'anthropic-version': '2023-06-01',
+                'Content-Type': 'application/json'
+            }
+        else:
+            # OpenAI兼容格式
+            if not api_base.endswith('/'):
+                api_base += '/'
+            if api_base.endswith('/v1/'):
+                models_url = api_base + 'models'
+            elif api_base.endswith('/'):
+                models_url = api_base + 'v1/models'
+            else:
+                models_url = api_base + '/v1/models'
+            
+            headers = {
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            }
+        
+        response = requests.get(models_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        models = []
+        
+        # 处理响应格式
+        if 'data' in data and isinstance(data['data'], list):
+            for model in data['data']:
+                model_id = model.get('id', '')
+                model_name = model.get('display_name') or model.get('name') or model_id
+                
+                # 过滤掉一些不常用的模型
+                if not any(skip in model_id.lower() for skip in ['whisper', 'tts', 'dall-e', 'embedding', 'moderation']):
+                    models.append({
+                        'id': model_id,
+                        'name': model_name
+                    })
+        
+        return models
+        
+    except Exception as e:
+        logger.warning(f"Failed to fetch models from API ({provider}): {str(e)}")
+        return None
 
 def ensure_user_exists(user_id=1):
     """确保指定用户存在，如果不存在则创建"""
@@ -459,30 +597,34 @@ def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_k
 
 @chat_bp.route("/models", methods=["GET"])
 def get_models():
+    """获取可用模型列表的API端点 - 改进版，支持多种API提供商"""
     api_key = request.args.get("apiKey")
-    api_base = request.args.get("apiBase")
+    api_base = request.args.get("apiBase", "https://api.openai.com/v1")
 
-    if not api_key or not api_base:
-        return jsonify({"success": False, "error": "API Key or Base URL is missing."}), 400
+    if not api_key:
+        return jsonify({"success": False, "error": "API Key is missing."}), 400
 
-    headers = {
-        "Authorization": f"Bearer {api_key}"
-    }
-    try:
-        response = requests.get(OPENAI_MODELS_URL.format(api_base=api_base), headers=headers, timeout=10)
-        response.raise_for_status()
-        models_data = response.json()
-        
-        available_models = []
-        for model in models_data.get("data", []):
-            if "gpt" in model["id"] or "claude" in model["id"] or "llama" in model["id"] or "mistral" in model["id"]:
-                available_models.append({"id": model["id"], "name": model["id"]})
-        
-        return jsonify({"success": True, "models": available_models})
-    except requests.exceptions.RequestException as e:
-        return jsonify({"success": False, "error": f"无法连接到API服务器: {str(e)}"}), 500
-    except Exception as e:
-        return jsonify({"success": False, "error": f"获取模型列表失败: {str(e)}"}), 500
+    # 检测API提供商类型
+    provider = detect_api_provider(api_base)
+    logger.info(f"Detected API provider: {provider} for base URL: {api_base}")
+
+    # 首先尝试从API获取模型列表
+    models = try_fetch_models_from_api(api_base, api_key, provider)
+    
+    # 如果API调用失败，使用默认模型列表
+    if models is None or len(models) == 0:
+        logger.info(f"Using default models for provider: {provider}")
+        models = get_default_models_for_provider(provider)
+    
+    # 确保至少有一个模型
+    if not models:
+        models = [{"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo"}]
+    
+    return jsonify({
+        "success": True, 
+        "models": models,
+        "provider": provider
+    })
 
 @chat_bp.route("/conversations", methods=["GET"])
 def get_conversations():

@@ -7,8 +7,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Settings, RefreshCw } from 'lucide-react';
 
-const SettingsDialog = ({ config, setConfig, saveConfig, availableModels, isLoadingModels, fetchModels }) => {
+const SettingsDialog = ({ config, setConfig, saveConfig, availableModels, isLoadingModels, fetchModels, setDefaultModels }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleApiBaseChange = (newApiBase) => {
+    setConfig({ ...config, apiBase: newApiBase });
+    // 当API Base URL变化时，自动更新默认模型列表
+    if (setDefaultModels) {
+      setDefaultModels(newApiBase);
+    }
+  };
 
   const handleSave = () => {
     saveConfig();
@@ -39,7 +47,7 @@ const SettingsDialog = ({ config, setConfig, saveConfig, availableModels, isLoad
                 id="apiBase"
                 placeholder="https://api.openai.com/v1"
                 value={config.apiBase}
-                onChange={(e) => setConfig({ ...config, apiBase: e.target.value })}
+                onChange={(e) => handleApiBaseChange(e.target.value)}
               />
             </div>
             <div>
