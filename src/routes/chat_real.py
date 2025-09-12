@@ -294,6 +294,244 @@ def chat():
         "conversation_id": conversation_id
     })
 
+@chat_bp.route("/generate-grammar-exercises", methods=["POST"])
+def generate_grammar_exercises():
+    """生成AI语法练习题"""
+    data = request.get_json()
+    grammar_point = data.get("grammarPoint")
+    config = data.get("config", {})
+    settings = data.get("settings", {})
+    
+    print(f"[DEBUG] 收到生成练习题请求: 语法点={grammar_point.get('name')}, 数量={settings.get('count')}, 难度={settings.get('difficulty')}")
+    
+    if not grammar_point or not config:
+        return jsonify({"success": False, "error": "语法点或配置信息缺失"}), 400
+        
+    api_key = config.get("apiKey")
+    api_base = config.get("apiBase")
+    model = config.get("model")
+    
+    if not api_key or not api_base or not model:
+        return jsonify({"success": False, "error": "API配置信息不完整"}), 400
+    
+    count = settings.get("count", 10)
+    difficulty = settings.get("difficulty", "medium")
+    
+    try:
+        exercises = generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_key, model)
+        return jsonify({
+            "success": True, 
+            "exercises": exercises,
+            "count": len(exercises)
+        })
+    except Exception as e:
+        print(f"[ERROR] 生成AI练习题失败: {e}")
+        return jsonify({"success": False, "error": f"生成练习题失败: {str(e)}"}), 500
+
+def generate_exercises_with_ai(grammar_point, count, difficulty, api_base, api_key, model):
+    """使用AI生成语法练习题"""
+    print(f"[DEBUG] 开始AI生成练习题，语法点: {grammar_point.get('name')}")
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    # 构建生成练习题的系统提示
+    difficulty_map = {
+        'easy': '简单',
+        'medium': '中等', 
+        'hard': '困难'
+    }
+    
+    difficulty_cn = difficulty_map.get(difficulty, '中等')
+    grammar_name = grammar_point.get('name', '')
+    grammar_description = grammar_point.get('description', '')
+    
+    # 获取语法规则作为上下文
+    rules_context = ""
+    if 'rules' in grammar_point:
+        rules_context = "\n语法规则：\n"
+        for rule in grammar_point['rules']:
+            rules_context += f"- {rule.get('title', '')}: {rule.get('content', '')}\n"
+            if 'examples' in rule:
+                rules_context += f"  例句: {', '.join(rule['examples'])}\n"
+    
+    system_prompt = f"""你是一个专业的英语语法练习题生成助手。请根据指定的语法点生成高质量的练习题。
+
+**任务要求：**
+- 语法点：{grammar_name} - {grammar_description}
+- 题目数量：{count}道
+- 难度级别：{difficulty_cn}
+{rules_context}
+
+**题目类型要求：**
+1. fill-blank（填空题）- 30-40%
+2. multiple-choice（选择题）- 30-40%
+3. correction（改错题）- 20-30%
+
+**输出格式要求：**
+必须返回一个有效的JSON数组，每个练习题包含以下字段：
+- id: 唯一标识符（如 "ai-ex-1", "ai-ex-2"）
+- type: 题目类型（"fill-blank", "multiple-choice", "correction"）
+- question: 题目描述或问题
+- answer: 正确答案（填空题和改错题用字符串，选择题用数字索引）
+- explanation: 详细的中文解释
+- difficulty: 难度级别（"{difficulty}"）
+
+**对于不同题型的具体要求：**
+
+1. fill-blank（填空题）：
+   - question: 包含下划线的句子，如 "She _____ (work) in a hospital."
+   - answer: 填入的正确答案，如 "works"
+
+2. multiple-choice（选择题）：
+   - question: 选择题问题
+   - options: 4个选项的数组
+   - answer: 正确答案的索引（0, 1, 2, 3）
+
+3. correction（改错题）：
+   - question: 固定文本 "请修正下面句子中的错误"
+   - sentence: 包含错误的句子
+   - correctSentence: 修正后的正确句子
+   - answer: 与correctSentence相同
+
+**示例输出格式：**
+```json
+[
+  {{
+    "id": "ai-ex-1",
+    "type": "fill-blank", 
+    "question": "She _____ (work) in a hospital every day.",
+    "answer": "works",
+    "explanation": "第三人称单数主语在一般现在时中，动词需要加-s或-es。",
+    "difficulty": "{difficulty}"
+  }},
+  {{
+    "id": "ai-ex-2",
+    "type": "multiple-choice",
+    "question": "Choose the correct sentence:",
+    "options": [
+      "I am go to school.", 
+      "I go to school.", 
+      "I going to school.", 
+      "I goes to school."
+    ],
+    "answer": 1,
+    "explanation": "在一般现在时中，主语I后面应该使用动词原形go。",
+    "difficulty": "{difficulty}"
+  }},
+  {{
+    "id": "ai-ex-3",
+    "type": "correction",
+    "question": "请修正下面句子中的错误",
+    "sentence": "He don't like coffee.",
+    "correctSentence": "He doesn't like coffee.",
+    "answer": "He doesn't like coffee.",
+    "explanation": "第三人称单数主语he的否定形式应该使用doesn't，而不是don't。",
+    "difficulty": "{difficulty}"
+  }}
+]
+```
+
+**重要注意事项：**
+1. 必须严格按照JSON格式输出，不要包含任何markdown代码块标记
+2. 所有字符串字段都要用双引号包围
+3. 确保JSON格式完全正确，可以直接解析
+4. 题目要紧密围绕指定的语法点
+5. 难度要符合用户选择的级别
+6. 解释要详细且易于理解
+7. 题目要有实用性和教学价值
+
+请立即生成{count}道关于"{grammar_name}"的{difficulty_cn}难度练习题："""
+
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system", 
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": f"请生成{count}道关于'{grammar_name}'的{difficulty_cn}难度语法练习题，严格按照JSON格式输出。"
+            }
+        ],
+        "max_tokens": 2000,
+        "temperature": 0.7
+    }
+    
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"[DEBUG] 发送生成练习题请求到: {OPENAI_CHAT_COMPLETIONS_URL.format(api_base=api_base)} (尝试 {attempt + 1})")
+            response = requests.post(OPENAI_CHAT_COMPLETIONS_URL.format(api_base=api_base), headers=headers, json=payload, timeout=30)
+            
+            if response.status_code == 429:
+                print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")
+                time.sleep(retry_delay)
+                continue
+                
+            print(f"[DEBUG] 练习题生成API响应状态码: {response.status_code}")
+            response.raise_for_status()
+            
+            if not response.text.strip():
+                print("[ERROR] API响应内容为空")
+                raise Exception("API响应内容为空")
+            
+            result = response.json()
+            content = result["choices"][0]["message"]["content"].strip()
+            print(f"[DEBUG] AI练习题生成原始响应: {content}")
+            
+            # 尝试直接解析JSON
+            try:
+                exercises = json.loads(content)
+                if isinstance(exercises, list) and len(exercises) > 0:
+                    print(f"[DEBUG] 成功生成 {len(exercises)} 道练习题")
+                    return exercises
+                else:
+                    print("[ERROR] AI返回的不是有效的练习题数组")
+                    raise Exception("AI返回的不是有效的练习题数组")
+            except json.JSONDecodeError:
+                # 如果直接解析失败，尝试提取JSON代码块
+                json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
+                if json_match:
+                    json_str = json_match.group(1).strip()
+                    exercises = json.loads(json_str)
+                    if isinstance(exercises, list) and len(exercises) > 0:
+                        print(f"[DEBUG] 从代码块中成功解析 {len(exercises)} 道练习题")
+                        return exercises
+                
+                # 如果还是失败，尝试提取数组部分
+                array_match = re.search(r'\[([\s\S]*)\]', content)
+                if array_match:
+                    array_str = '[' + array_match.group(1) + ']'
+                    exercises = json.loads(array_str)
+                    if isinstance(exercises, list) and len(exercises) > 0:
+                        print(f"[DEBUG] 从数组匹配中成功解析 {len(exercises)} 道练习题")
+                        return exercises
+                
+                print(f"[ERROR] 无法解析AI返回的JSON: {content}")
+                raise Exception(f"无法解析AI返回的练习题JSON: {content}")
+                
+        except requests.exceptions.RequestException as e:
+            print(f"[ERROR] 练习题生成API请求失败: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                raise Exception(f"练习题生成API请求失败: {e}")
+        except Exception as e:
+            print(f"[ERROR] 练习题生成发生未知错误: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                raise Exception(f"练习题生成失败: {e}")
+    
+    print("[ERROR] 所有重试尝试均失败")
+    raise Exception("所有重试尝试均失败")
+
 @chat_bp.route("/models", methods=["GET"])
 def get_models():
     api_key = request.args.get("apiKey")

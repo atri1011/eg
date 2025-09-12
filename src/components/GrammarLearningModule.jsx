@@ -6,13 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { ChevronRight, BookOpen, Target, Award, ArrowLeft } from 'lucide-react';
 import { grammarCategories, getGrammarByLevel } from '../data/grammarData.js';
+import { useConfig } from '../hooks/useConfig.js';
 import GrammarDetailView from './GrammarDetailView.jsx';
 import GrammarPracticeView from './GrammarPracticeView.jsx';
+import PracticeSelectionView from './PracticeSelectionView.jsx';
 
 const GrammarLearningModule = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedGrammarPoint, setSelectedGrammarPoint] = useState(null);
-  const [currentView, setCurrentView] = useState('overview'); // 'overview', 'detail', 'practice'
+  const [currentView, setCurrentView] = useState('overview'); // 'overview', 'detail', 'selection', 'practice'
+  const [practiceData, setPracticeData] = useState(null);
+  const { config } = useConfig();
   
   const levelColors = {
     beginner: 'bg-green-100 text-green-800',
@@ -32,12 +36,18 @@ const GrammarLearningModule = () => {
 
   const handlePracticeClick = (grammarPoint) => {
     setSelectedGrammarPoint(grammarPoint);
+    setCurrentView('selection');
+  };
+
+  const handleStartPractice = (practiceInfo) => {
+    setPracticeData(practiceInfo);
     setCurrentView('practice');
   };
 
   const handleBackToOverview = () => {
     setSelectedCategory(null);
     setSelectedGrammarPoint(null);
+    setPracticeData(null);
     setCurrentView('overview');
   };
 
@@ -207,10 +217,19 @@ const GrammarLearningModule = () => {
           onStartPractice={() => handlePracticeClick(selectedGrammarPoint)}
         />
       )}
+      {currentView === 'selection' && selectedGrammarPoint && (
+        <PracticeSelectionView
+          grammarPoint={selectedGrammarPoint}
+          onBack={handleBackToOverview}
+          onStartPractice={handleStartPractice}
+          config={config}
+        />
+      )}
       {currentView === 'practice' && selectedGrammarPoint && (
         <GrammarPracticeView 
           grammarPoint={selectedGrammarPoint}
           onBack={handleBackToOverview}
+          practiceData={practiceData}
         />
       )}
     </div>

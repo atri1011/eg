@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input.jsx';
 import { ArrowLeft, Target, CheckCircle, XCircle, RotateCcw, Trophy } from 'lucide-react';
 import { getExercisesByGrammarId } from '../data/grammarData.js';
 
-const GrammarPracticeView = ({ grammarPoint, onBack }) => {
+const GrammarPracticeView = ({ grammarPoint, onBack, practiceData }) => {
   const [exercises, setExercises] = useState([]);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
@@ -17,12 +17,21 @@ const GrammarPracticeView = ({ grammarPoint, onBack }) => {
   const [completedExercises, setCompletedExercises] = useState(0);
 
   useEffect(() => {
-    const grammarExercises = getExercisesByGrammarId(grammarPoint.id);
-    setExercises(grammarExercises);
+    let exercisesToUse = [];
+    
+    if (practiceData && practiceData.exercises) {
+      // 使用传入的练习题数据（预设或AI生成）
+      exercisesToUse = practiceData.exercises;
+    } else {
+      // 兜底：使用预设练习题
+      exercisesToUse = getExercisesByGrammarId(grammarPoint.id);
+    }
+    
+    setExercises(exercisesToUse);
     setCurrentExerciseIndex(0);
     setScore(0);
     setCompletedExercises(0);
-  }, [grammarPoint.id]);
+  }, [grammarPoint.id, practiceData]);
 
   const currentExercise = exercises[currentExerciseIndex];
 
@@ -221,11 +230,22 @@ const GrammarPracticeView = ({ grammarPoint, onBack }) => {
           <Target className="w-8 h-8 text-blue-600" />
           <h1 className="text-2xl font-bold text-gray-800">{grammarPoint.name} - 练习</h1>
         </div>
-        {currentExercise && (
-          <Badge className={getDifficultyColor(currentExercise.difficulty)}>
-            难度: {getDifficultyName(currentExercise.difficulty)}
-          </Badge>
-        )}
+        <div className="flex items-center justify-center space-x-2 mb-2">
+          {practiceData && practiceData.type === 'ai' ? (
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              AI生成题目
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              预设题目
+            </Badge>
+          )}
+          {currentExercise && (
+            <Badge className={getDifficultyColor(currentExercise.difficulty)}>
+              难度: {getDifficultyName(currentExercise.difficulty)}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {isCompleted ? (
