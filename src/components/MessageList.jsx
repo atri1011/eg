@@ -172,69 +172,67 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
       ) : (
         messages.map((message) => (
           <div key={message.id} className={`flex flex-col ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className={`max-w-[85%] md:max-w-xs lg:max-w-xl px-4 py-2 rounded-lg ${
+            <div className={`max-w-[85%] md:max-w-xs lg:max-w-xl px-4 py-3 ${
               message.type === 'user'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-gray-200 [color:#000] rounded-2xl'
                 : message.type === 'error'
-                ? 'bg-red-100 text-red-800 border border-red-200'
-                : 'bg-white text-gray-800 border border-gray-200'
+                ? 'bg-red-100 text-red-800 border border-red-200 rounded-lg'
+                : 'bg-white text-gray-800 border border-gray-200 rounded-lg'
               }`}>
               {message.type === 'ai'
                 ? renderSegmentedMessage(message.content, message.translation)
                 : (
-                  <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message' : ''}`}>
+                  <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message prose-invert' : ''}`}>
                     <ReactMarkdown>{message.content}</ReactMarkdown>
                   </div>
                 )
               }
             </div>
 
-            {/* 优化与纠错显示 */}
+            {/* 优化与纠错显示 - 新样式 */}
             {message.type === 'user' && message.corrections && Object.keys(message.corrections).length > 0 && (
-              <div className="mt-2 max-w-[85%] w-auto">
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div>
-                    <div className="flex items-center text-sm text-yellow-600 mb-2">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      <span className="font-semibold">语法建议</span>
+              <div className="mt-3 max-w-[85%] w-auto">
+                <div className="bg-gray-100 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-orange-500">✨</span>
+                    <span className="text-gray-700 font-medium text-sm">语法纠错：</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* 错误和正确的对比 */}
+                    <div className="bg-white rounded-xl p-3 shadow-sm">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
+                        <span className="text-gray-800 text-sm">{message.corrections.original_sentence}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
+                        <span className="text-gray-800 text-sm font-medium">{message.corrections.corrected_sentence}</span>
+                      </div>
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="bg-red-50 p-2 rounded-md">
-                        <span className="font-medium text-red-700">原文:</span>
-                        <p className="mt-1 text-gray-700 break-words">{message.corrections.original_sentence}</p>
-                      </div>
-                      <div className="bg-green-50 p-2 rounded-md">
-                        <span className="font-medium text-green-700">建议:</span>
-                        <p className="mt-1 text-gray-800 break-words">{message.corrections.corrected_sentence}</p>
-                      </div>
-                      {/* 渲染详细修正 */}
-                      {message.corrections.corrections && message.corrections.corrections.length > 0 && (
-                        <div className="border-t border-gray-200 mt-3 pt-3">
-                          {/* 先渲染语法修正 */}
-                          {message.corrections.corrections.filter(c => c.type !== 'translation').map((correction, index) => (
-                            <div key={`correction-${index}`} className="flex items-start text-xs text-gray-600 mb-1 flex-wrap">
-                              <Badge variant="default" className="mr-2 capitalize text-white shrink-0">
-                                语法
-                              </Badge>
-                              <span className="line-through text-red-500 break-all">{correction.original}</span>
-                              <span className="mx-1 shrink-0">→</span>
-                              <span className="text-green-600 font-semibold break-all">{correction.corrected}</span>
-                            </div>
-                          ))}
-                          {/* 再渲染翻译 */}
-                          {message.corrections.corrections.filter(c => c.type === 'translation').map((correction, index) => (
-                            <div key={`translation-${index}`} className="flex items-start text-xs text-gray-600 mb-1 flex-wrap">
-                              <Badge variant="default" className="mr-2 capitalize text-white shrink-0">
-                                翻译
-                              </Badge>
-                              <span className="line-through text-red-500 break-all">{correction.original}</span>
-                              <span className="mx-1 shrink-0">→</span>
-                              <span className="text-green-600 font-semibold break-all">{correction.corrected}</span>
-                            </div>
-                          ))}
+                    
+                    {/* 单词级别的纠错 */}
+                    {message.corrections.corrections && message.corrections.corrections.length > 0 && (
+                      <div className="bg-white rounded-xl p-3 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
+                            <span className="text-red-600 text-sm font-medium">
+                              {message.corrections.corrections[0]?.original || message.corrections.original_sentence.split(' ').find(word => 
+                                message.corrections.corrected_sentence.indexOf(word) === -1
+                              ) || '苹果'}
+                            </span>
+                          </div>
+                          <span className="text-gray-400">→</span>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
+                            <span className="text-green-600 text-sm font-medium">
+                              {message.corrections.corrections[0]?.corrected || 'apple'}
+                            </span>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

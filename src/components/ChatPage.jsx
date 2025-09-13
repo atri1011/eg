@@ -79,7 +79,7 @@ const ChatPage = () => {
             <div className="hidden md:flex items-center space-x-2 mr-2">
               <div className="flex items-center space-x-2 px-3 py-2 bg-white/70 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm">
                 <User className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-black">
                   {user?.username || '用户'}
                 </span>
               </div>
