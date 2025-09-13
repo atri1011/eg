@@ -210,6 +210,85 @@ That sounds fascinating! What kind of books do you enjoy reading the most? ||| �
 **示例:**
 That sounds fascinating! What kind of books do you enjoy reading the most? ||| 那听起来太有趣了！你最喜欢读什么类型的书？"""
 
+def is_chinese_text(text):
+    """检测文本是否主要是中文"""
+    import re
+    # 移除标点符号和空格
+    cleaned_text = re.sub(r'[^\w\s]', '', text)
+    if not cleaned_text:
+        return False
+    
+    # 统计中文字符数量
+    chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', cleaned_text))
+    # 统计英文字符数量
+    english_chars = len(re.findall(r'[a-zA-Z]', cleaned_text))
+    
+    # 如果中文字符占大多数，判定为中文文本
+    return chinese_chars > english_chars
+
+def get_translation_from_chinese(chinese_text, api_base, api_key, model):
+    """将中文翻译成英文"""
+    print(f"[DEBUG] 开始中文翻译，文本: {chinese_text}")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    system_prompt = """你是一位专业的中英翻译专家。请将用户提供的中文句子翻译成地道的英文。
+
+**翻译要求:**
+1. 保持原意准确
+2. 翻译要自然流畅，符合英语表达习惯
+3. 只返回翻译后的英文句子，不要包含任何解释或其他内容
+
+**重要指令:**
+* 只返回翻译结果，不要添加任何解释或额外内容
+* 不要使用引号或其他标记包裹翻译结果
+* 确保翻译的准确性和自然度"""
+
+    payload = {
+        "model": model,
+        "messages": [
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": chinese_text
+            }
+        ],
+        "max_tokens": 1000,
+        "temperature": 0.1
+    }
+
+    try:
+        response = requests.post(OPENAI_CHAT_COMPLETIONS_URL.format(api_base=api_base), headers=headers, json=payload, timeout=15)
+        response.raise_for_status()
+        result = response.json()
+        translation = result["choices"][0]["message"]["content"].strip()
+        print(f"[DEBUG] 翻译结果: {translation}")
+        
+        # 如果翻译结果与原文不同，返回翻译数据
+        if translation and translation != chinese_text:
+            return {
+                "original_sentence": chinese_text,
+                "corrected_sentence": translation,
+                "overall_comment": "中文翻译成功",
+                "corrections": [
+                    {
+                        "type": "translation",
+                        "original": chinese_text,
+                        "corrected": translation,
+                        "explanation": f"将中文句子 '{chinese_text}' 翻译成英文"
+                    }
+                ]
+            }
+        return None
+    except Exception as e:
+        print(f"[ERROR] 中文翻译失败: {e}")
+        return None
+
 def get_detailed_corrections(text, api_base, api_key, model):
     """
     Analyzes user input for translation and grammar errors in one go,
@@ -389,12 +468,24 @@ def chat():
     message_for_ai = user_message
     
     try:
-        # 1. 获取语法修正
-        detailed_corrections = get_detailed_corrections(user_message, api_base, api_key, model)
-        if detailed_corrections:
-            grammar_correction_result = detailed_corrections
-            message_for_ai = detailed_corrections.get("corrected_sentence", user_message)
-            print(f"[DEBUG] 修正完成，用于AI对话的消息: {message_for_ai}")
+        # 1. 首先检测输入语言类型
+        print(f"[DEBUG] 检测输入语言: {user_message}")
+        if is_chinese_text(user_message):
+            print(f"[DEBUG] 检测到纯中文输入，进行翻译")
+            # 纯中文输入：直接翻译
+            translation_result = get_translation_from_chinese(user_message, api_base, api_key, model)
+            if translation_result:
+                grammar_correction_result = translation_result
+                message_for_ai = translation_result.get("corrected_sentence", user_message)
+                print(f"[DEBUG] 中文翻译完成，用于AI对话的消息: {message_for_ai}")
+        else:
+            print(f"[DEBUG] 检测到英文或中英混合输入，进行语法纠错")
+            # 英文或中英混合输入：进行语法纠错和翻译
+            detailed_corrections = get_detailed_corrections(user_message, api_base, api_key, model)
+            if detailed_corrections:
+                grammar_correction_result = detailed_corrections
+                message_for_ai = detailed_corrections.get("corrected_sentence", user_message)
+                print(f"[DEBUG] 语法纠错完成，用于AI对话的消息: {message_for_ai}")
 
         # 2. 处理会话和保存用户消息
         if conversation_id:
