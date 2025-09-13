@@ -189,7 +189,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
               }
             </div>
 
-            {/* 优化与纠错显示 - 新样式 */}
+            {/* 语法纠错显示 */}
             {message.type === 'user' && message.corrections && Object.keys(message.corrections).length > 0 && (
               <div className="mt-3 max-w-[85%] w-auto">
                 <div className="bg-gray-100 rounded-2xl p-4 shadow-sm">
@@ -199,15 +199,15 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
                   </div>
                   
                   <div className="space-y-3">
-                    {/* 错误和正确的对比 */}
+                    {/* 整句纠错 */}
                     <div className="bg-white rounded-xl p-3 shadow-sm">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                        <span className="text-gray-800 text-sm">{message.corrections.original_sentence}</span>
+                        <span className="text-red-600 line-through text-sm">{message.corrections.original_sentence}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
-                        <span className="text-gray-800 text-sm font-medium">{message.corrections.corrected_sentence}</span>
+                        <span className="text-green-600 text-sm font-medium">{message.corrections.corrected_sentence}</span>
                       </div>
                     </div>
                     
@@ -217,10 +217,8 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2">
                             <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                            <span className="text-red-600 text-sm font-medium">
-                              {message.corrections.corrections[0]?.original || message.corrections.original_sentence.split(' ').find(word => 
-                                message.corrections.corrected_sentence.indexOf(word) === -1
-                              ) || '苹果'}
+                            <span className="text-red-600 line-through text-sm font-medium">
+                              {message.corrections.corrections[0]?.original || '苹果'}
                             </span>
                           </div>
                           <span className="text-gray-400">→</span>
@@ -229,6 +227,40 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
                             <span className="text-green-600 text-sm font-medium">
                               {message.corrections.corrections[0]?.corrected || 'apple'}
                             </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 翻译部分 */}
+                    {message.corrections.translation && (
+                      <div className="bg-white rounded-xl p-3 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
+                            <span className="text-red-600 line-through text-sm">you has 什么</span>
+                          </div>
+                          <span className="text-gray-400">→</span>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
+                            <span className="text-green-600 text-sm font-medium">What do you have?</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 单词翻译纠错 */}
+                    {message.corrections.word_corrections && message.corrections.word_corrections.length > 0 && (
+                      <div className="bg-white rounded-xl p-3 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
+                            <span className="text-red-600 line-through text-sm">什么</span>
+                          </div>
+                          <span className="text-gray-400">→</span>
+                          <div className="flex items-center gap-2">
+                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
+                            <span className="text-green-600 text-sm font-medium">what</span>
                           </div>
                         </div>
                       </div>
