@@ -2,6 +2,7 @@
 系统提示模板配置
 """
 
+
 def build_system_prompt(language_preference: str) -> str:
     """构建系统提示"""
     prompts = {
@@ -36,6 +37,6 @@ That sounds fascinating! What kind of books do you enjoy reading the most? ||| �
 4.  **Focus on Fluency**: Do not correct the user's grammar. Your priority is to maintain a smooth and encouraging conversation.
 """
     }
-    
+
     # 获取对应的提示，如果没有找到则返回双语模式
     return prompts.get(language_preference, prompts['bilingual'])

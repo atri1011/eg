@@ -14,11 +14,13 @@ apply_network_fixes()
 
 from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
-from src.models.user import db
-from src.routes.user import user_bp
-from src.routes.auth import auth_bp
-from src.routes.chat_real import chat_bp
-from src.routes.word_query import word_query_bp
+from src.models import db
+from src.api.user import user_bp
+from src.api.auth import auth_bp
+from src.api.chat import chat_bp
+from src.api.exercise import exercise_bp
+from src.api.models import models_bp
+from src.api.word_query import word_query_bp
 import logging
 
 # 根据环境设置日志级别
@@ -59,6 +61,8 @@ CORS(app,
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(chat_bp, url_prefix='/api')
+app.register_blueprint(exercise_bp, url_prefix='/api')
+app.register_blueprint(models_bp, url_prefix='/api')
 app.register_blueprint(word_query_bp, url_prefix='/api')
 
 # Enhanced database URL processing for IPv4 compatibility
@@ -176,29 +180,31 @@ def handle_exception(e):
     else:
         return jsonify({'error': str(e)}), 500
 
-# 确保数据库表在启动时创建，并初始化默认数据
-with app.app_context():
-    try:
-        db.create_all()
-        app.logger.info("Database tables created successfully")
-        
-        # 创建默认用户（如果不存在）
-        from src.models.user import User
-        default_user = User.query.filter_by(id=1).first()
-        if not default_user:
-            default_user = User(id=1, username='default_user', email='default@example.com')
-            # 为默认用户设置密码
-            default_user.set_password('default123')
-            db.session.add(default_user)
-            db.session.commit()
-            app.logger.info("Default user created successfully")
-        else:
-            app.logger.info("Default user already exists")
-            
-    except Exception as e:
-        app.logger.error(f"Failed to create database tables or default user: {str(e)}")
-        if IS_PRODUCTION:
-            raise  # 在生产环境中，这是致命错误
+def create_tables_and_default_user():
+    """在应用上下文中创建数据库表和默认用户。"""
+    with app.app_context():
+        try:
+            db.create_all()
+            app.logger.info("Database tables created successfully.")
+
+            # 创建默认用户
+            from src.models.user import User
+            if not User.query.filter_by(id=1).first():
+                default_user = User(id=1, username='default_user', email='default@example.com')
+                default_user.set_password('default123')
+                db.session.add(default_user)
+                db.session.commit()
+                app.logger.info("Default user created successfully.")
+            else:
+                app.logger.info("Default user already exists.")
+
+        except Exception as e:
+            app.logger.error(f"Failed to create database tables or default user: {str(e)}")
+            if IS_PRODUCTION:
+                raise
+
+# 在应用启动时调用
+create_tables_and_default_user()
 
 if __name__ == '__main__':
     # 只在直接运行时使用（开发环境）

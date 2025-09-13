@@ -5,10 +5,11 @@ import json
 
 word_query_bp = Blueprint("word_query", __name__)
 
+
 def build_sentence_analysis_prompt(sentence, context, selected_vocab):
     """构建句子解析的系统提示"""
     vocab_list = "、".join(selected_vocab)
-    
+
     return f"""你是一个专业的英语教学助手。用户提供了一个英文句子，并选择了其中不认识的生词。
 
 句子："{sentence}"
@@ -52,6 +53,7 @@ def build_sentence_analysis_prompt(sentence, context, selected_vocab):
 - 例句要有教学价值
 - 确保返回的是有效的JSON格式"""
 
+
 def build_word_query_prompt(word, context, language_preference='bilingual'):
     """构建单词查询的系统提示"""
     return f"""你是一个专业的英语词汇助手。用户询问单词"{word}"，上下文是："{context}"
@@ -83,23 +85,25 @@ def build_word_query_prompt(word, context, language_preference='bilingual'):
 - 例句应该与上下文相关
 - 确保返回的是有效的JSON格式"""
 
+
 def query_with_ai(text, context, api_base, api_key, model, query_type='word-query', selected_vocab=None):
     """使用AI API查询单词或解析句子"""
     url = f"{api_base}/chat/completions"
-    
+
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
     }
-    
+
     # 根据查询类型选择不同的提示
     if query_type == 'sentence-analysis' and selected_vocab:
-        system_prompt = build_sentence_analysis_prompt(text, context, selected_vocab)
+        system_prompt = build_sentence_analysis_prompt(
+            text, context, selected_vocab)
         user_prompt = f'请解析这个句子，重点关注用户选择的生词：{", ".join(selected_vocab)}'
     else:
         system_prompt = build_word_query_prompt(text, context)
         user_prompt = f'请查询单词"{text}"在以下上下文中的详细信息：{context}'
-    
+
     data = {
         'model': model,
         'messages': [
@@ -115,15 +119,15 @@ def query_with_ai(text, context, api_base, api_key, model, query_type='word-quer
         'temperature': 0.7,
         'max_tokens': 2000
     }
-    
+
     try:
         response = requests.post(url, headers=headers, json=data, timeout=30)
         response.raise_for_status()
         result = response.json()
-        
+
         if 'choices' in result and len(result['choices']) > 0:
             content = result['choices'][0]['message']['content']
-            
+
             # 尝试解析JSON响应
             try:
                 # 清理可能的markdown格式
@@ -131,7 +135,7 @@ def query_with_ai(text, context, api_base, api_key, model, query_type='word-quer
                     content = content.split('```json')[1].split('```')[0]
                 elif '```' in content:
                     content = content.split('```')[1].split('```')[0]
-                
+
                 parsed_info = json.loads(content.strip())
                 return parsed_info
             except json.JSONDecodeError:
@@ -151,21 +155,22 @@ def query_with_ai(text, context, api_base, api_key, model, query_type='word-quer
                     }
         else:
             return {"error": "API返回格式异常"}
-            
+
     except requests.exceptions.RequestException as e:
         return {"error": f"API请求失败: {str(e)}"}
     except Exception as e:
         return {"error": f"处理失败: {str(e)}"}
 
+
 def query_word_with_ai(word, context, api_base, api_key, model):
     """使用AI API查询单词"""
     url = f"{api_base}/chat/completions"
-    
+
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
     }
-    
+
     data = {
         'model': model,
         'messages': [
@@ -181,15 +186,15 @@ def query_word_with_ai(word, context, api_base, api_key, model):
         'temperature': 0.7,
         'max_tokens': 1000
     }
-    
+
     try:
         response = requests.post(url, headers=headers, json=data, timeout=30)
         response.raise_for_status()
         result = response.json()
-        
+
         if 'choices' in result and len(result['choices']) > 0:
             content = result['choices'][0]['message']['content']
-            
+
             # 尝试解析JSON响应
             try:
                 # 清理可能的markdown格式
@@ -197,7 +202,7 @@ def query_word_with_ai(word, context, api_base, api_key, model):
                     content = content.split('```json')[1].split('```')[0]
                 elif '```' in content:
                     content = content.split('```')[1].split('```')[0]
-                
+
                 word_info = json.loads(content.strip())
                 return word_info
             except json.JSONDecodeError:
@@ -209,51 +214,55 @@ def query_word_with_ai(word, context, api_base, api_key, model):
                 }
         else:
             return {"error": "API返回格式异常"}
-            
+
     except requests.exceptions.RequestException as e:
         return {"error": f"API请求失败: {str(e)}"}
     except Exception as e:
         return {"error": f"处理失败: {str(e)}"}
+
 
 @word_query_bp.route('/word-query', methods=['POST'])
 def word_query():
     """单词查询和句子解析API端点"""
     try:
         data = request.get_json()
-        
+
         if not data:
             return jsonify({'success': False, 'error': '请求数据为空'}), 400
-        
+
         text = data.get('word', '').strip()
         context = data.get('context', '').strip()
         config = data.get('config', {})
         query_type = data.get('queryType', 'word-query')
         selected_vocab = data.get('selectedVocab', [])
-        
+
         if not text:
             return jsonify({'success': False, 'error': '文本内容不能为空'}), 400
-        
+
         # 获取API配置
         api_base = config.get('apiBase', '').strip()
         api_key = config.get('apiKey', '').strip()
-        model = config.get('customModel', '').strip() or config.get('model', 'gpt-3.5-turbo')
-        
+        model = config.get('customModel', '').strip(
+        ) or config.get('model', 'gpt-3.5-turbo')
+
         if not api_base or not api_key:
             return jsonify({
-                'success': False, 
+                'success': False,
                 'error': 'API配置不完整，请在设置中配置API密钥和服务器地址'
             }), 400
-        
+
         # 根据查询类型选择合适的查询函数
         if query_type == 'sentence-analysis':
-            result = query_with_ai(text, context, api_base, api_key, model, 'sentence-analysis', selected_vocab)
+            result = query_with_ai(
+                text, context, api_base, api_key, model, 'sentence-analysis', selected_vocab)
         else:
-            result = query_word_with_ai(text, context, api_base, api_key, model)
-        
+            result = query_word_with_ai(
+                text, context, api_base, api_key, model)
+
         if 'error' in result:
             return jsonify({'success': False, 'error': result['error']}), 500
-        
+
         return jsonify({'success': True, 'data': result})
-        
+
     except Exception as e:
         return jsonify({'success': False, 'error': f'服务器错误: {str(e)}'}), 500

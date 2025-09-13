@@ -7,15 +7,16 @@ from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
+
 class TranslationService:
     """翻译和语法纠错服务"""
-    
+
     def __init__(self, api_base: str, api_key: str, model: str):
         self.api_base = api_base
         self.api_key = api_key
         self.model = model
         self.chat_completions_url = f"{api_base}/chat/completions"
-        
+
     @staticmethod
     def is_chinese_text(text: str) -> bool:
         """检测文本是否主要是中文"""
@@ -23,24 +24,24 @@ class TranslationService:
         cleaned_text = re.sub(r'[^\w\s]', '', text)
         if not cleaned_text:
             return False
-        
+
         # 统计中文字符数量
         chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', cleaned_text))
         # 统计英文字符数量
         english_chars = len(re.findall(r'[a-zA-Z]', cleaned_text))
-        
+
         # 如果中文字符占大多数，判定为中文文本
         return chinese_chars > english_chars
 
     def get_translation_from_chinese(self, chinese_text: str) -> Optional[Dict]:
         """将中文翻译成英文"""
         print(f"[DEBUG] 开始中文翻译，文本: {chinese_text}")
-        
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         system_prompt = """你是一位专业的中英翻译专家。请将用户提供的中文句子翻译成地道的英文。
 
 **翻译要求:**
@@ -70,12 +71,13 @@ class TranslationService:
         }
 
         try:
-            response = requests.post(self.chat_completions_url, headers=headers, json=payload, timeout=15)
+            response = requests.post(
+                self.chat_completions_url, headers=headers, json=payload, timeout=15)
             response.raise_for_status()
             result = response.json()
             translation = result["choices"][0]["message"]["content"].strip()
             print(f"[DEBUG] 翻译结果: {translation}")
-            
+
             # 如果翻译结果与原文不同，返回翻译数据
             if translation and translation != chinese_text:
                 return {
@@ -102,12 +104,12 @@ class TranslationService:
         返回详细的修正说明。
         """
         print(f"[DEBUG] 开始详细语法检查和翻译，文本: {text}")
-        
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         system_prompt = """你是一位顶级的英语语法和翻译专家。你的任务是精确分析用户提供的句子，并始终返回一个结构化、详细的JSON对象。
 
 **JSON结构要求:**
@@ -165,9 +167,11 @@ class TranslationService:
 
         for attempt in range(max_retries):
             try:
-                print(f"[DEBUG] 发送详细修正请求到: {self.chat_completions_url} (尝试 {attempt + 1})")
-                response = requests.post(self.chat_completions_url, headers=headers, json=payload, timeout=20)
-                
+                print(
+                    f"[DEBUG] 发送详细修正请求到: {self.chat_completions_url} (尝试 {attempt + 1})")
+                response = requests.post(
+                    self.chat_completions_url, headers=headers, json=payload, timeout=20)
+
                 if response.status_code == 429:
                     print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")
                     time.sleep(retry_delay)
@@ -175,7 +179,7 @@ class TranslationService:
 
                 print(f"[DEBUG] 详细修正API响应状态码: {response.status_code}")
                 response.raise_for_status()
-                
+
                 # 检查响应内容是否为空
                 if not response.text.strip():
                     print("[ERROR] API响应内容为空")
@@ -187,14 +191,14 @@ class TranslationService:
 
                 # 使用正则表达式从响应中提取JSON
                 json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
-                
+
                 if not json_match:
                     print(f"[DEBUG] AI响应中未找到有效的JSON代码块。响应内容: '{content}'")
                     # 如果没有找到JSON，那么可能AI认为这句话不需要修正
                     return None
 
                 json_str = json_match.group(1).strip()
-                
+
                 try:
                     # 解析提取出的JSON字符串
                     correction_data = json.loads(json_str)
@@ -202,7 +206,7 @@ class TranslationService:
                     print(f"[ERROR] 从提取的字符串中解析JSON失败: {e}")
                     print(f"[ERROR] 无法解析的JSON字符串: '{json_str}'")
                     raise Exception(f"JSON解析错误: {json_str}")
-                
+
                 if "original_sentence" in correction_data and "corrected_sentence" in correction_data and "corrections" in correction_data:
                     original = correction_data.get("original_sentence")
                     corrected = correction_data.get("corrected_sentence")
@@ -211,7 +215,7 @@ class TranslationService:
                     if has_no_corrections and original == corrected:
                         print("[DEBUG] AI返回无错误且句子无变化")
                         return None
-                    
+
                     print(f"[DEBUG] 解析后的详细修正数据: {correction_data}")
                     return correction_data
                 else:
@@ -231,7 +235,7 @@ class TranslationService:
             except Exception as e:
                 print(f"[ERROR] 详细修正发生未知错误: {e}")
                 raise Exception(f"详细修正发生未知错误: {e}")
-        
+
         print("[ERROR] 所有重试尝试均失败")
         raise Exception("所有重试尝试均失败")
 
@@ -242,29 +246,33 @@ class TranslationService:
         """
         grammar_correction_result = None
         message_for_ai = user_message
-        
+
         try:
             # 1. 首先检测输入语言类型
             print(f"[DEBUG] 检测输入语言: {user_message}")
             if self.is_chinese_text(user_message):
                 print(f"[DEBUG] 检测到纯中文输入，进行翻译")
                 # 纯中文输入：直接翻译
-                translation_result = self.get_translation_from_chinese(user_message)
+                translation_result = self.get_translation_from_chinese(
+                    user_message)
                 if translation_result:
                     grammar_correction_result = translation_result
-                    message_for_ai = translation_result.get("corrected_sentence", user_message)
+                    message_for_ai = translation_result.get(
+                        "corrected_sentence", user_message)
                     print(f"[DEBUG] 中文翻译完成，用于AI对话的消息: {message_for_ai}")
             else:
                 print(f"[DEBUG] 检测到英文或中英混合输入，进行语法纠错")
                 # 英文或中英混合输入：进行语法纠错和翻译
-                detailed_corrections = self.get_detailed_corrections(user_message)
+                detailed_corrections = self.get_detailed_corrections(
+                    user_message)
                 if detailed_corrections:
                     grammar_correction_result = detailed_corrections
-                    message_for_ai = detailed_corrections.get("corrected_sentence", user_message)
+                    message_for_ai = detailed_corrections.get(
+                        "corrected_sentence", user_message)
                     print(f"[DEBUG] 语法纠错完成，用于AI对话的消息: {message_for_ai}")
 
             return message_for_ai, grammar_correction_result
-            
+
         except Exception as e:
             print(f"[ERROR] 处理用户输入失败: {e}")
             return user_message, None

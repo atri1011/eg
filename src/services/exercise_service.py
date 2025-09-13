@@ -7,9 +7,10 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
+
 class ExerciseService:
     """AI练习题生成服务"""
-    
+
     def __init__(self, api_base: str, api_key: str, model: str):
         self.api_base = api_base
         self.api_key = api_key
@@ -19,23 +20,23 @@ class ExerciseService:
     def generate_exercises(self, grammar_point: Dict, count: int = 10, difficulty: str = "medium") -> List[Dict]:
         """使用AI生成语法练习题"""
         print(f"[DEBUG] 开始AI生成练习题，语法点: {grammar_point.get('name')}")
-        
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         # 构建生成练习题的系统提示
         difficulty_map = {
             'easy': '简单',
-            'medium': '中等', 
+            'medium': '中等',
             'hard': '困难'
         }
-        
+
         difficulty_cn = difficulty_map.get(difficulty, '中等')
         grammar_name = grammar_point.get('name', '')
         grammar_description = grammar_point.get('description', '')
-        
+
         # 优化系统提示以提高题目质量和格式稳定性
         system_prompt = f"""你是一位专业的英语教学内容设计师。请为以下语法点生成 {count} 道高质量的英语练习题。
 
@@ -89,7 +90,7 @@ class ExerciseService:
             "model": self.model,
             "messages": [
                 {
-                    "role": "system", 
+                    "role": "system",
                     "content": system_prompt
                 },
                 {
@@ -100,15 +101,17 @@ class ExerciseService:
             "max_tokens": 8192,  # 设置一个合理的默认值
             "temperature": 0.3   # 降低随机性以提高稳定性
         }
-        
+
         max_retries = 3
         retry_delay = 2
-        
+
         for attempt in range(max_retries):
             try:
-                print(f"[DEBUG] 发送生成练习题请求到: {self.chat_completions_url} (尝试 {attempt + 1})")
-                response = requests.post(self.chat_completions_url, headers=headers, json=payload, timeout=30)
-                
+                print(
+                    f"[DEBUG] 发送生成练习题请求到: {self.chat_completions_url} (尝试 {attempt + 1})")
+                response = requests.post(
+                    self.chat_completions_url, headers=headers, json=payload, timeout=30)
+
                 if response.status_code == 429:
                     print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")
                     time.sleep(retry_delay)
@@ -122,18 +125,18 @@ class ExerciseService:
                         if attempt < max_retries - 1:
                             time.sleep(retry_delay * 2)  # 更长的重试间隔
                             continue
-                    
+
                 print(f"[DEBUG] 练习题生成API响应状态码: {response.status_code}")
                 response.raise_for_status()
-                
+
                 if not response.text.strip():
                     print("[ERROR] API响应内容为空")
                     raise Exception("API响应内容为空")
-                
+
                 result = response.json()
                 content = result["choices"][0]["message"]["content"].strip()
                 print(f"[DEBUG] AI练习题生成原始响应: {content}")
-                
+
                 # 尝试直接解析JSON
                 try:
                     exercises = json.loads(content)
@@ -145,14 +148,15 @@ class ExerciseService:
                         raise Exception("AI返回的不是有效的练习题数组")
                 except json.JSONDecodeError:
                     # 如果直接解析失败，尝试提取JSON代码块
-                    json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
+                    json_match = re.search(
+                        r"```json\s*([\s\S]*?)\s*```", content)
                     if json_match:
                         json_str = json_match.group(1).strip()
                         exercises = json.loads(json_str)
                         if isinstance(exercises, list) and len(exercises) > 0:
                             print(f"[DEBUG] 从代码块中成功解析 {len(exercises)} 道练习题")
                             return exercises
-                    
+
                     # 如果还是失败，尝试提取数组部分
                     array_match = re.search(r'\[([\s\S]*)\]', content)
                     if array_match:
@@ -161,10 +165,10 @@ class ExerciseService:
                         if isinstance(exercises, list) and len(exercises) > 0:
                             print(f"[DEBUG] 从数组匹配中成功解析 {len(exercises)} 道练习题")
                             return exercises
-                    
+
                     print(f"[ERROR] 无法解析AI返回的JSON: {content}")
                     raise Exception(f"无法解析AI返回的练习题JSON: {content}")
-                    
+
             except requests.exceptions.RequestException as e:
                 print(f"[ERROR] 练习题生成API请求失败: {e}")
                 if attempt < max_retries - 1:
@@ -177,7 +181,7 @@ class ExerciseService:
                     time.sleep(retry_delay)
                 else:
                     raise Exception(f"练习题生成失败: {e}")
-        
+
         print("[ERROR] 所有重试尝试均失败")
         raise Exception("所有重试尝试均失败")
 
@@ -188,12 +192,15 @@ class ExerciseService:
             return False
 
         # 预处理：忽略大小写、标点和首尾空格
-        processed_user_answer = re.sub(r'[^\w\s]', '', user_answer).lower().strip()
-        processed_correct_answer = re.sub(r'[^\w\s]', '', correct_answer).lower().strip()
-        
+        processed_user_answer = re.sub(
+            r'[^\w\s]', '', user_answer).lower().strip()
+        processed_correct_answer = re.sub(
+            r'[^\w\s]', '', correct_answer).lower().strip()
+
         # 比较答案
         is_correct = processed_user_answer == processed_correct_answer
-        
-        print(f"[DEBUG] 答案验证: 用户答案='{user_answer}' (处理后: '{processed_user_answer}'), 正确答案='{correct_answer}' (处理后: '{processed_correct_answer}'), 结果: {is_correct}")
+
+        print(
+            f"[DEBUG] 答案验证: 用户答案='{user_answer}' (处理后: '{processed_user_answer}'), 正确答案='{correct_answer}' (处理后: '{processed_correct_answer}'), 结果: {is_correct}")
 
         return is_correct

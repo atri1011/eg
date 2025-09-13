@@ -4,45 +4,46 @@ from typing import List, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
+
 class ApiProviderService:
     """API提供商检测和模型管理服务"""
-    
+
     @staticmethod
     def detect_api_provider(api_base: str) -> str:
         """根据API Base URL检测API提供商类型"""
         if not api_base:
             return 'openai'
-        
+
         api_base_lower = api_base.lower()
-        
+
         # OpenAI官方或兼容的API
         if 'openai.com' in api_base_lower or 'api.openai.com' in api_base_lower:
             return 'openai'
-        
+
         # Anthropic Claude
         elif 'anthropic.com' in api_base_lower:
             return 'anthropic'
-        
+
         # 智谱AI
         elif 'bigmodel.cn' in api_base_lower or 'zhipuai' in api_base_lower:
             return 'zhipu'
-        
+
         # 月之暗面 Kimi
         elif 'moonshot.cn' in api_base_lower:
             return 'moonshot'
-        
+
         # 豆包/字节跳动
         elif 'volcengine.com' in api_base_lower or 'doubao' in api_base_lower:
             return 'doubao'
-        
+
         # DeepSeek
         elif 'deepseek' in api_base_lower:
             return 'deepseek'
-        
+
         # Azure OpenAI
         elif 'azure' in api_base_lower and 'openai' in api_base_lower:
             return 'azure_openai'
-        
+
         # 默认尝试OpenAI兼容格式
         else:
             return 'openai_compatible'
@@ -78,7 +79,7 @@ class ApiProviderService:
                 {'id': 'deepseek-v3', 'name': 'DeepSeek V3'},
             ]
         }
-        
+
         return model_configs.get(provider, [
             {'id': 'gpt-4', 'name': 'GPT-4'},
             {'id': 'gpt-4-turbo', 'name': 'GPT-4 Turbo'},
@@ -111,35 +112,37 @@ class ApiProviderService:
                     models_url = api_base + 'v1/models'
                 else:
                     models_url = api_base + '/v1/models'
-                
+
                 headers = {
                     'Authorization': f'Bearer {api_key}',
                     'Content-Type': 'application/json'
                 }
-            
+
             response = requests.get(models_url, headers=headers, timeout=10)
             response.raise_for_status()
-            
+
             data = response.json()
             models = []
-            
+
             # 处理响应格式
             if 'data' in data and isinstance(data['data'], list):
                 for model in data['data']:
                     model_id = model.get('id', '')
-                    model_name = model.get('display_name') or model.get('name') or model_id
-                    
+                    model_name = model.get(
+                        'display_name') or model.get('name') or model_id
+
                     # 过滤掉一些不常用的模型
                     if not any(skip in model_id.lower() for skip in ['whisper', 'tts', 'dall-e', 'embedding', 'moderation']):
                         models.append({
                             'id': model_id,
                             'name': model_name
                         })
-            
+
             return models
-            
+
         except Exception as e:
-            logger.warning(f"Failed to fetch models from API ({provider}): {str(e)}")
+            logger.warning(
+                f"Failed to fetch models from API ({provider}): {str(e)}")
             return None
 
     @classmethod
@@ -147,22 +150,23 @@ class ApiProviderService:
         """获取模型列表的主方法"""
         # 检测API提供商类型
         provider = cls.detect_api_provider(api_base)
-        logger.info(f"Detected API provider: {provider} for base URL: {api_base}")
+        logger.info(
+            f"Detected API provider: {provider} for base URL: {api_base}")
 
         # 首先尝试从API获取模型列表
         models = cls.try_fetch_models_from_api(api_base, api_key, provider)
-        
+
         # 如果API调用失败，使用默认模型列表
         if models is None or len(models) == 0:
             logger.info(f"Using default models for provider: {provider}")
             models = cls.get_default_models_for_provider(provider)
-        
+
         # 确保至少有一个模型
         if not models:
             models = [{"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo"}]
-        
+
         return {
-            "success": True, 
+            "success": True,
             "models": models,
             "provider": provider
         }
