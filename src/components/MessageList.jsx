@@ -174,7 +174,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
           <div key={message.id} className={`flex flex-col ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
             <div className={`max-w-[85%] md:max-w-xs lg:max-w-xl px-4 py-3 ${
               message.type === 'user'
-                ? 'bg-gray-200 [color:#000] rounded-2xl'
+                ? 'bg-gray-200 text-black rounded-2xl'
                 : message.type === 'error'
                 ? 'bg-red-100 text-red-800 border border-red-200 rounded-lg'
                 : 'bg-white text-gray-800 border border-gray-200 rounded-lg'
