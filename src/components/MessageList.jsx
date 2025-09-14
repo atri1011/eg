@@ -199,7 +199,7 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
                   </div>
                   
                   <div className="space-y-3">
-                    {/* 整句纠错 */}
+                    {/* 整句纠错显示 */}
                     <div className="bg-white rounded-xl p-3 shadow-sm">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
@@ -211,60 +211,28 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
                       </div>
                     </div>
                     
-                    {/* 单词级别的纠错 */}
-                    {message.corrections.corrections && message.corrections.corrections.length > 0 && (
-                      <div className="bg-white rounded-xl p-3 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                            <span className="text-red-600 line-through text-sm font-medium">
-                              {message.corrections.corrections[0]?.original || '苹果'}
-                            </span>
-                          </div>
-                          <span className="text-gray-400">→</span>
-                          <div className="flex items-center gap-2">
-                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
-                            <span className="text-green-600 text-sm font-medium">
-                              {message.corrections.corrections[0]?.corrected || 'apple'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 翻译部分 */}
-                    {message.corrections.translation && (
-                      <div className="bg-white rounded-xl p-3 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                            <span className="text-red-600 line-through text-sm">you has 什么</span>
-                          </div>
-                          <span className="text-gray-400">→</span>
-                          <div className="flex items-center gap-2">
-                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
-                            <span className="text-green-600 text-sm font-medium">What do you have?</span>
+                    {/* 单个翻译错误显示 */}
+                    {message.corrections.corrections && message.corrections.corrections
+                      .filter(c => c.type === 'translation')
+                      .map((correction, index) => (
+                        <div key={index} className="bg-white rounded-xl p-3 shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
+                              <span className="text-red-600 line-through text-sm font-medium">
+                                {correction.original}
+                              </span>
+                            </div>
+                            <span className="text-gray-400">→</span>
+                            <div className="flex items-center gap-2">
+                              <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
+                              <span className="text-green-600 text-sm font-medium">
+                                {correction.corrected}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-
-                    {/* 单词翻译纠错 */}
-                    {message.corrections.word_corrections && message.corrections.word_corrections.length > 0 && (
-                      <div className="bg-white rounded-xl p-3 shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                            <span className="text-red-600 line-through text-sm">什么</span>
-                          </div>
-                          <span className="text-gray-400">→</span>
-                          <div className="flex items-center gap-2">
-                            <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
-                            <span className="text-green-600 text-sm font-medium">what</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      ))}
                   </div>
                 </div>
               </div>
