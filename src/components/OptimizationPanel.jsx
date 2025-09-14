@@ -155,7 +155,7 @@ const OptimizationPanel = ({ corrections, optimization }) => {
               )}
               {hasOptimization && (
                 <Badge className="bg-blue-100 text-blue-600 text-xs">
-                  四级优化
+                  {optimization.optimization_type === 'cet4_context_aware' ? '上下文感知四级优化' : '四级优化'}
                 </Badge>
               )}
             </div>
@@ -216,7 +216,7 @@ const OptimizationPanel = ({ corrections, optimization }) => {
                     className="flex-1 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
-                    四级优化
+                    {optimization.optimization_type === 'cet4_context_aware' ? '上下文感知四级优化' : '四级优化'}
                   </TabsTrigger>
                 )}
                 {hasCorrections && (

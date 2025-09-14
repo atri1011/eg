@@ -6,7 +6,7 @@ import logging
 import asyncio
 import aiohttp
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 
 logger = logging.getLogger(__name__)
 
@@ -666,9 +666,277 @@ class TranslationService:
             print(f"[ERROR] 并行处理失败: {e}")
             return user_message, None, None
 
-    def process_user_input(self, user_message: str) -> Tuple[str, Optional[Dict], Optional[Dict]]:
+    def process_user_input_with_context(self, user_message: str, conversation_history: List[Dict] = None) -> Tuple[str, Optional[Dict], Optional[Dict]]:
         """
-        处理用户输入，使用并行方式提高效率
+        处理用户输入，带上下文感知的优化
         返回: (处理后的消息, 纠错结果, 优化结果)
         """
-        return self.process_user_input_parallel(user_message)
+        print(f"[DEBUG] 开始上下文感知处理用户输入: {user_message}")
+        print(f"[DEBUG] 对话历史条数: {len(conversation_history) if conversation_history else 0}")
+        
+        grammar_correction_result = None
+        optimization_result = None
+        message_for_ai = user_message
+        
+        # 准备并行请求
+        requests_to_make = []
+        
+        # 1. 检测语言类型并准备相应的请求
+        if self.is_chinese_text(user_message):
+            print(f"[DEBUG] 检测到纯中文输入，准备翻译请求")
+            # 中文翻译请求
+            translation_payload = {
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": """你是一位专业的中英翻译专家。请将用户提供的中文句子翻译成地道的英文。
+
+**翻译要求:**
+1. 保持原意准确
+2. 翻译要自然流畅，符合英语表达习惯
+3. 只返回翻译后的英文句子，不要包含任何解释或其他内容
+
+**重要指令:**
+* 只返回翻译结果，不要添加任何解释或额外内容
+* 不要使用引号或其他标记包裹翻译结果
+* 确保翻译的准确性和自然度"""
+                    },
+                    {
+                        "role": "user",
+                        "content": user_message
+                    }
+                ],
+                "max_tokens": 1000,
+                "temperature": 0.1
+            }
+            requests_to_make.append(("translation", translation_payload))
+        else:
+            print(f"[DEBUG] 检测到英文或中英混合输入，准备上下文感知语法纠错请求")
+            # 构建上下文信息
+            context_info = self._build_context_info(conversation_history)
+            
+            # 上下文感知语法纠错请求
+            grammar_payload = {
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": f"""你是一位顶级的英语语法和翻译专家。你的任务是根据对话上下文，精确分析用户提供的句子，并返回结构化的JSON对象。
+
+**对话上下文信息:**
+{context_info}
+
+**JSON结构要求:**
+1.  `original_sentence`: 用户输入的原始句子。
+2.  `corrected_sentence`: 修正后的最终英文句子。
+3.  `overall_comment`: (可选) 一句中文总结，对句子进行总体评价或给予鼓励。
+4.  `corrections`: 一个包含所有修改项的列表。
+
+**`corrections` 列表的详细规则:**
+*   每个修改项都是一个包含 `type`, `original`, `corrected`, `explanation` 的对象。
+*   `type` 必须是 "translation" (翻译), "grammar" (语法), "spelling" (拼写), 或 "context" (上下文优化) 之一。
+*   `explanation` 必须是详细且易于理解的中文解释，特别是上下文相关的改进。
+
+**上下文感知优化要点:**
+* 根据对话主题调整词汇选择和表达方式
+* 确保句子风格与对话语境一致
+* 考虑对话的正式程度和语气
+* 注意与前面对话内容的逻辑连贯性
+
+**重要指令:**
+*   **必须返回JSON:** 无论输入如何，都必须返回一个符合上述结构的有效JSON对象。
+*   **上下文优化**: 优先考虑句子在当前对话语境下的适合性。
+*   **无错误处理:** 如果句子在上下文中被视为合适，`corrected_sentence` 应与 `original_sentence` 相同，`corrections` 列表必须为空 `[]`。
+*   **严禁额外文本:** 绝对不要在JSON对象之外返回任何文本、注释或解释。"""
+                    },
+                    {
+                        "role": "user",
+                        "content": user_message
+                    }
+                ],
+                "max_tokens": 1000000,
+                "temperature": 0.1
+            }
+            requests_to_make.append(("grammar", grammar_payload))
+        
+        # 2. 上下文感知四级优化请求（总是执行）
+        context_info = self._build_context_info(conversation_history)
+        optimization_payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": f"""你是一位专业的英语四级考试写作指导老师。根据四级写作评分标准和对话上下文，优化用户输入为符合高分要求的表达。
+
+**对话上下文信息:**
+{context_info}
+
+**四级写作评分标准（满分15分）:**
+- 14分档(13-15分): 切合题意，清楚表达，文字连贯，语言错误极少
+- 11分档(10-12分): 切合题意，表达清楚，文字基本连贯，有少量语言错误
+- 8分档(7-9分): 基本切题，有些地方表达思想不够清楚，文字勉强连贯，语言错误相当多
+
+**上下文感知优化目标:**
+1. **主题一致性**: 确保优化后的表达与对话主题高度相关
+2. **语气连贯**: 保持与对话整体语气的一致性
+3. **词汇适配**: 根据对话内容选择合适的四级词汇
+4. **表达升级**: 在保持上下文连贯的基础上提升表达水平
+
+**具体优化任务:**
+1. 将中英混合句子转换为纯英文，符合对话语境
+2. 根据对话主题选择最合适的四级词汇
+3. 优化句式结构，提高在当前语境下的表达效果
+4. 确保语法正确且符合对话的自然流畅度
+
+**返回格式:**
+只返回一个优化后的英文句子，确保它在当前对话语境下自然且符合四级高分标准。
+
+**重要指令:**
+* 必须考虑对话上下文，让优化结果更贴合当前话题和语境
+* 保持对话的自然性和连贯性
+* 使用准确且适当的四级词汇"""
+                },
+                {
+                    "role": "user",
+                    "content": user_message
+                }
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.2
+        }
+        requests_to_make.append(("optimization", optimization_payload))
+        
+        # 3. 使用线程池并行执行请求
+        results = {}
+        try:
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                # 提交所有任务
+                future_to_type = {
+                    executor.submit(self._make_request_sync, payload, req_type): req_type 
+                    for req_type, payload in requests_to_make
+                }
+                
+                # 等待所有任务完成
+                for future in as_completed(future_to_type):
+                    req_type = future_to_type[future]
+                    try:
+                        result = future.result()
+                        if result:
+                            results[req_type] = result
+                    except Exception as e:
+                        print(f"[ERROR] {req_type} 请求异常: {e}")
+            
+            print(f"[DEBUG] 上下文感知并行请求完成，收到 {len(results)} 个结果")
+            
+            # 4. 处理结果
+            # 处理翻译/语法纠错结果
+            if "translation" in results:
+                translation_content = results["translation"]["content"]
+                if translation_content and translation_content != user_message:
+                    grammar_correction_result = {
+                        "original_sentence": user_message,
+                        "corrected_sentence": translation_content,
+                        "overall_comment": "中文翻译成功，已根据对话上下文优化",
+                        "corrections": [
+                            {
+                                "type": "translation",
+                                "original": user_message,
+                                "corrected": translation_content,
+                                "explanation": f"将中文句子 '{user_message}' 翻译成适合当前对话语境的英文"
+                            }
+                        ]
+                    }
+                    message_for_ai = translation_content
+                    
+            elif "grammar" in results:
+                grammar_content = results["grammar"]["content"]
+                # 解析语法纠错的JSON结果
+                try:
+                    json_match = re.search(r"```json\s*([\s\S]*?)\s*```", grammar_content)
+                    if json_match:
+                        json_str = json_match.group(1).strip()
+                        grammar_correction_result = json.loads(json_str)
+                        if grammar_correction_result and grammar_correction_result.get("corrected_sentence"):
+                            corrected = grammar_correction_result.get("corrected_sentence")
+                            original = grammar_correction_result.get("original_sentence")
+                            # 只有在确实有修正时才使用纠错结果
+                            if corrected != original:
+                                message_for_ai = corrected
+                except Exception as e:
+                    print(f"[ERROR] 解析上下文感知语法纠错JSON失败: {e}")
+            
+            # 处理优化结果
+            if "optimization" in results:
+                optimization_content = results["optimization"]["content"]
+                if optimization_content and optimization_content.strip().lower() != user_message.strip().lower():
+                    optimization_result = {
+                        "original_sentence": user_message,
+                        "optimized_sentence": optimization_content,
+                        "optimization_type": "cet4_context_aware"
+                    }
+                    # 如果有优化结果，使用优化后的文本作为AI对话输入
+                    message_for_ai = optimization_content
+                    print(f"[DEBUG] 上下文感知四级优化完成，最终用于AI对话的消息: {message_for_ai}")
+            
+            print(f"[DEBUG] 上下文感知处理完成，最终消息: {message_for_ai}")
+            return message_for_ai, grammar_correction_result, optimization_result
+            
+        except Exception as e:
+            print(f"[ERROR] 上下文感知处理失败: {e}")
+            return user_message, None, None
+            
+    def _build_context_info(self, conversation_history: List[Dict] = None) -> str:
+        """
+        构建对话上下文信息字符串
+        """
+        if not conversation_history or len(conversation_history) == 0:
+            return "当前是对话开始，没有历史上下文。"
+        
+        # 取最近的几轮对话作为上下文（最多5轮）
+        recent_messages = conversation_history[-10:] if len(conversation_history) > 10 else conversation_history
+        
+        context_parts = []
+        context_parts.append(f"对话历史（最近{len(recent_messages)}条消息）：")
+        
+        for i, msg in enumerate(recent_messages):
+            role = "用户" if msg.get('role') == 'user' else "AI助手"
+            content = msg.get('content', '')[:100]  # 限制每条消息长度
+            context_parts.append(f"{i+1}. {role}: {content}")
+        
+        # 分析对话主题
+        if len(recent_messages) >= 2:
+            topics = []
+            for msg in recent_messages:
+                content = msg.get('content', '').lower()
+                # 简单的主题识别
+                if any(word in content for word in ['study', 'learn', 'school', 'exam', 'book']):
+                    topics.append('学习')
+                elif any(word in content for word in ['travel', 'trip', 'vacation', 'visit']):
+                    topics.append('旅行')
+                elif any(word in content for word in ['work', 'job', 'career', 'office']):
+                    topics.append('工作')
+                elif any(word in content for word in ['food', 'eat', 'restaurant', 'cook']):
+                    topics.append('美食')
+                elif any(word in content for word in ['movie', 'film', 'music', 'book', 'art']):
+                    topics.append('娱乐')
+            
+            if topics:
+                main_topic = max(set(topics), key=topics.count)
+                context_parts.append(f"\n主要话题: {main_topic}")
+        
+        context_parts.append(f"\n对话语气: {'正式' if len(recent_messages) > 0 and '您' in str(recent_messages) else '友好轻松'}")
+        
+        return "\n".join(context_parts)
+
+    def process_user_input(self, user_message: str, conversation_history: List[Dict] = None) -> Tuple[str, Optional[Dict], Optional[Dict]]:
+        """
+        处理用户输入 - 新版本支持上下文感知
+        返回: (处理后的消息, 纠错结果, 优化结果)
+        """
+        # 如果有对话历史，使用上下文感知版本
+        if conversation_history and len(conversation_history) > 0:
+            return self.process_user_input_with_context(user_message, conversation_history)
+        else:
+            # 对话开始时使用原版本
+            return self.process_user_input_parallel(user_message)

@@ -21,21 +21,37 @@ class ChatService:
     def process_chat_message(self, user_id: int, user_message: str, conversation_id: int = None, language_preference: str = 'en'):
         """
         处理用户聊天消息的完整流程。
-        1. 处理用户输入（翻译和语法纠错）。
-        2. 获取或创建会话。
-        3. 保存用户消息。
-        4. 获取历史消息并请求 AI。
-        5. 保存 AI 回复。
+        1. 获取或创建会话。
+        2. 获取历史消息作为上下文。
+        3. 处理用户输入（带上下文的翻译和语法纠错）。
+        4. 保存用户消息。
+        5. 获取历史消息并请求 AI。
+        6. 保存 AI 回复。
         """
-        # 1. 处理用户输入
-        message_for_ai, grammar_correction_result, optimization_result = self.translation_service.process_user_input(
-            user_message)
-
-        # 2. 获取或创建会话
+        # 1. 获取或创建会话
         conversation = ConversationService.create_or_get_conversation(
             user_id, conversation_id, user_message)
 
-        # 3. 保存用户消息
+        # 2. 获取历史消息作为上下文（在处理用户输入前）
+        messages_history, error = ConversationService.get_messages_by_conversation_id(
+            conversation.id, user_id)
+        if error:
+            raise Exception(error)
+
+        # 构建对话历史用于上下文感知
+        conversation_context = []
+        if messages_history:
+            for msg in messages_history:
+                conversation_context.append({
+                    'role': msg.role,
+                    'content': msg.content
+                })
+
+        # 3. 处理用户输入（带上下文感知）
+        message_for_ai, grammar_correction_result, optimization_result = self.translation_service.process_user_input(
+            user_message, conversation_context)
+
+        # 4. 保存用户消息
         ConversationService.add_message(
             conversation_id=conversation.id,
             role='user',
@@ -44,7 +60,7 @@ class ChatService:
             optimization=optimization_result
         )
 
-        # 4. 获取历史消息并发送给AI
+        # 5. 重新获取包含新用户消息的历史消息并发送给AI
         messages_history, error = ConversationService.get_messages_by_conversation_id(
             conversation.id, user_id)
         if error:
@@ -56,7 +72,7 @@ class ChatService:
         ai_response_content = self._send_chat_request(
             messages_for_api, system_prompt)
 
-        # 5. 保存AI回复
+        # 6. 保存AI回复
         ConversationService.add_message(
             conversation_id=conversation.id,
             role='assistant',
