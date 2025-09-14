@@ -235,7 +235,7 @@ const OptimizationPanel = ({ corrections, optimization }) => {
                 <TabsContent value="optimization" className="p-4 space-y-4 tab-content-enter">
                   <div className="bg-white rounded-lg border border-blue-200 p-4">
                     <div className="mb-3">
-                      <h4 className="font-medium text-gray-800">优化对比</h4>
+                      <h4 className="font-medium text-gray-800">四级写作优化建议</h4>
                     </div>
                     
                     <div className="space-y-3">
@@ -263,6 +263,88 @@ const OptimizationPanel = ({ corrections, optimization }) => {
                           />
                         </div>
                       </div>
+
+                      {/* 四级评分分析 */}
+                      {optimization.scoring_analysis && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h5 className="text-sm font-medium text-blue-800 mb-2">四级评分分析</h5>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">表达清晰度：</span>
+                              <span className="font-medium text-blue-600">{optimization.scoring_analysis.clarity}/5</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">连贯性：</span>
+                              <span className="font-medium text-blue-600">{optimization.scoring_analysis.coherence}/5</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">语言准确性：</span>
+                              <span className="font-medium text-blue-600">{optimization.scoring_analysis.accuracy}/5</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">词汇水平：</span>
+                              <span className="font-medium text-blue-600">{optimization.scoring_analysis.vocabulary}/5</span>
+                            </div>
+                          </div>
+                          
+                          {optimization.current_score_range && (
+                            <div className="mt-2 pt-2 border-t border-blue-200">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">当前预估分数：</span>
+                                <span className="font-medium text-orange-600">{optimization.current_score_range}</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-600">优化后分数：</span>
+                                <span className="font-medium text-green-600">{optimization.target_score_range}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 改进建议 */}
+                      {optimization.improvements && optimization.improvements.length > 0 && (
+                        <div className="mt-4">
+                          <h5 className="text-sm font-medium text-gray-800 mb-2">具体改进建议</h5>
+                          <div className="space-y-2">
+                            {optimization.improvements.map((improvement, index) => (
+                              <div key={index} className="bg-gray-50 p-3 rounded border-l-4 border-blue-400">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge className="bg-blue-100 text-blue-700 text-xs">
+                                    {improvement.aspect}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-gray-700 mb-1">
+                                  <strong>问题：</strong>{improvement.issue}
+                                </div>
+                                <div className="text-xs text-green-700 mb-1">
+                                  <strong>改进：</strong>{improvement.improvement}
+                                </div>
+                                {improvement.example && (
+                                  <div className="text-xs text-blue-700">
+                                    <strong>示例：</strong>{improvement.example}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 写作技巧 */}
+                      {optimization.tips && optimization.tips.length > 0 && (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <h5 className="text-sm font-medium text-green-800 mb-2">写作技巧建议</h5>
+                          <ul className="text-xs text-green-700 space-y-1">
+                            {optimization.tips.map((tip, index) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-green-500 mt-0.5">•</span>
+                                <span>{tip}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TabsContent>

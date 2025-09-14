@@ -244,8 +244,8 @@ class TranslationService:
 
     def optimize_for_cet4(self, text: str) -> Optional[Dict]:
         """
-        优化用户输入文本，使其更适合四级水平
-        处理中英混合输入，将其转换为四级水平的英文句子
+        根据四级考试写作评分标准优化用户输入文本
+        评分要点：清晰表达、文字连贯、语言错误少、切合题意
         """
         print(f"[DEBUG] 开始四级优化，文本: {text}")
 
@@ -254,34 +254,42 @@ class TranslationService:
             "Content-Type": "application/json"
         }
 
-        system_prompt = """你是一位专业的英语四级考试写作指导老师。你的任务是将用户输入的句子优化为更符合英语四级水平的表达。
+        system_prompt = """你是一位专业的英语四级考试写作指导老师。根据四级写作评分标准，你需要将用户输入优化为符合高分要求的表达。
 
-**优化任务:**
-1. 将中英混合的句子转换为纯英文句子
-2. 将中文词汇替换为合适的四级水平英文单词
-3. 调整句式结构，使其符合四级写作要求
-4. 确保语法正确、表达自然
+**四级写作评分标准（满分15分）:**
+- 14分档(13-15分): 切合题意，清楚表达，文字连贯，语言错误极少
+- 11分档(10-12分): 切合题意，表达清楚，文字基本连贯，有少量语言错误
+- 8分档(7-9分): 基本切题，有些地方表达思想不够清楚，文字勉强连贯，语言错误相当多
 
-**优化标准:**
-- 使用四级词汇范围内的单词
-- 句式不要过于复杂，但要符合英语表达习惯
-- 保持原句的核心意思
-- 语法结构清晰正确
+**优化目标 - 达到14分档要求:**
+1. **清晰表达**: 用词准确，表意清楚，避免模糊或歧义表达
+2. **文字连贯**: 句子结构合理，逻辑清晰，使用恰当的连接词
+3. **语言错误少**: 语法正确，拼写准确，时态一致
+4. **词汇水平**: 使用四级词汇范围内的词汇，避免过于简单或过于复杂
+
+**具体优化任务:**
+1. 将中英混合句子转换为纯英文
+2. 替换不合适的词汇为四级水平的表达
+3. 优化句式结构，提高表达的清晰度和连贯性
+4. 修正语法错误，确保表达准确
 
 **返回格式:**
-只返回优化后的英文句子，不要包含任何解释或其他内容。
+只返回一个优化后的英文句子，不添加引号、解释或其他内容。
 
-**示例:**
+**优化示例:**
 输入: "i want to buy a 电脑 for study"
-输出: "I want to buy a computer for studying."
+输出: "I want to purchase a computer for my studies."
 
 输入: "这个problem很difficult"  
-输出: "This problem is very difficult."
+输出: "This problem is quite challenging."
+
+输入: "teacher give us homework everyday"
+输出: "The teacher assigns us homework every day."
 
 **重要指令:**
-* 只返回优化后的句子，不要添加引号或其他标记
-* 确保句子符合四级英语水平
-* 保持句子的完整性和自然度"""
+* 确保优化后的句子符合四级高分标准
+* 保持原意的同时提升表达质量
+* 使用准确且适当的四级词汇"""
 
         payload = {
             "model": self.model,
@@ -321,6 +329,108 @@ class TranslationService:
             return None
         except Exception as e:
             print(f"[ERROR] 四级优化失败: {e}")
+            return None
+
+    def optimize_for_cet4_detailed(self, text: str) -> Optional[Dict]:
+        """
+        提供详细的四级优化分析，包括评分细则和改进建议
+        返回结构化的优化结果，包含评分分析
+        """
+        print(f"[DEBUG] 开始详细四级优化分析，文本: {text}")
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        system_prompt = """你是一位经验丰富的英语四级考试写作评卷老师。请对用户输入进行详细的四级写作分析和优化，并返回结构化的JSON结果。
+
+**四级写作评分标准（满分15分）:**
+- 14分档(13-15分): 切合题意，清楚表达，文字连贯，语言错误极少
+- 11分档(10-12分): 切合题意，表达清楚，文字基本连贯，有少量语言错误  
+- 8分档(7-9分): 基本切题，有些地方表达思想不够清楚，文字勉强连贯，语言错误相当多
+
+**请返回以下JSON格式:**
+```json
+{
+  "original_sentence": "原句",
+  "optimized_sentence": "优化后的句子",
+  "current_score_range": "8-11分", 
+  "target_score_range": "13-15分",
+  "improvements": [
+    {
+      "aspect": "词汇选择/语法结构/表达清晰度/连贯性",
+      "issue": "具体问题描述",
+      "improvement": "改进方法",
+      "example": "改进示例"
+    }
+  ],
+  "scoring_analysis": {
+    "clarity": "表达清晰度评分(1-5)",
+    "coherence": "连贯性评分(1-5)", 
+    "accuracy": "语言准确性评分(1-5)",
+    "vocabulary": "词汇水平评分(1-5)"
+  },
+  "tips": ["写作技巧建议1", "写作技巧建议2"]
+}
+```
+
+**分析要点:**
+1. 评估当前句子的四级评分水平
+2. 指出具体的改进点
+3. 提供优化后的高分表达
+4. 给出针对性的学习建议
+
+**重要指令:**
+- 必须返回有效的JSON格式
+- 分析要准确且具有指导意义
+- 优化建议要符合四级水平"""
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system", 
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ],
+            "max_tokens": 2000,
+            "temperature": 0.2
+        }
+
+        try:
+            response = requests.post(
+                self.chat_completions_url, headers=headers, json=payload, timeout=20)
+            response.raise_for_status()
+            result = response.json()
+            content = result["choices"][0]["message"]["content"].strip()
+            print(f"[DEBUG] 详细四级优化分析结果: {content}")
+
+            # 解析JSON结果
+            json_match = re.search(r"```json\s*([\s\S]*?)\s*```", content)
+            if json_match:
+                json_str = json_match.group(1).strip()
+                try:
+                    analysis_data = json.loads(json_str)
+                    return analysis_data
+                except json.JSONDecodeError as e:
+                    print(f"[ERROR] 解析详细分析JSON失败: {e}")
+                    return None
+            else:
+                print(f"[DEBUG] 未找到JSON格式，尝试直接解析: {content}")
+                # 尝试直接解析整个内容
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError:
+                    print(f"[ERROR] 无法解析详细分析结果")
+                    return None
+                    
+        except Exception as e:
+            print(f"[ERROR] 详细四级优化分析失败: {e}")
             return None
 
     def _make_request_sync(self, payload: Dict, request_type: str) -> Optional[Dict]:
@@ -430,34 +540,42 @@ class TranslationService:
             "messages": [
                 {
                     "role": "system",
-                    "content": """你是一位专业的英语四级考试写作指导老师。你的任务是将用户输入的句子优化为更符合英语四级水平的表达。
+                    "content": """你是一位专业的英语四级考试写作指导老师。根据四级写作评分标准，你需要将用户输入优化为符合高分要求的表达。
 
-**优化任务:**
-1. 将中英混合的句子转换为纯英文句子
-2. 将中文词汇替换为合适的四级水平英文单词
-3. 调整句式结构，使其符合四级写作要求
-4. 确保语法正确、表达自然
+**四级写作评分标准（满分15分）:**
+- 14分档(13-15分): 切合题意，清楚表达，文字连贯，语言错误极少
+- 11分档(10-12分): 切合题意，表达清楚，文字基本连贯，有少量语言错误
+- 8分档(7-9分): 基本切题，有些地方表达思想不够清楚，文字勉强连贯，语言错误相当多
 
-**优化标准:**
-- 使用四级词汇范围内的单词
-- 句式不要过于复杂，但要符合英语表达习惯
-- 保持原句的核心意思
-- 语法结构清晰正确
+**优化目标 - 达到14分档要求:**
+1. **清晰表达**: 用词准确，表意清楚，避免模糊或歧义表达
+2. **文字连贯**: 句子结构合理，逻辑清晰，使用恰当的连接词
+3. **语言错误少**: 语法正确，拼写准确，时态一致
+4. **词汇水平**: 使用四级词汇范围内的词汇，避免过于简单或过于复杂
+
+**具体优化任务:**
+1. 将中英混合句子转换为纯英文
+2. 替换不合适的词汇为四级水平的表达
+3. 优化句式结构，提高表达的清晰度和连贯性
+4. 修正语法错误，确保表达准确
 
 **返回格式:**
-只返回优化后的英文句子，不要包含任何解释或其他内容。
+只返回一个优化后的英文句子，不添加引号、解释或其他内容。
 
-**示例:**
+**优化示例:**
 输入: "i want to buy a 电脑 for study"
-输出: "I want to buy a computer for studying."
+输出: "I want to purchase a computer for my studies."
 
 输入: "这个problem很difficult"  
-输出: "This problem is very difficult."
+输出: "This problem is quite challenging."
+
+输入: "teacher give us homework everyday"
+输出: "The teacher assigns us homework every day."
 
 **重要指令:**
-* 只返回优化后的句子，不要添加引号或其他标记
-* 确保句子符合四级英语水平
-* 保持句子的完整性和自然度"""
+* 确保优化后的句子符合四级高分标准
+* 保持原意的同时提升表达质量
+* 使用准确且适当的四级词汇"""
                 },
                 {
                     "role": "user",
