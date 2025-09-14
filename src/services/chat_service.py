@@ -28,7 +28,7 @@ class ChatService:
         5. 保存 AI 回复。
         """
         # 1. 处理用户输入
-        message_for_ai, grammar_correction_result = self.translation_service.process_user_input(
+        message_for_ai, grammar_correction_result, optimization_result = self.translation_service.process_user_input(
             user_message)
 
         # 2. 获取或创建会话
@@ -40,7 +40,8 @@ class ChatService:
             conversation_id=conversation.id,
             role='user',
             content=user_message,
-            corrections=grammar_correction_result
+            corrections=grammar_correction_result,
+            optimization=optimization_result
         )
 
         # 4. 获取历史消息并发送给AI
@@ -65,6 +66,7 @@ class ChatService:
         return {
             "response": ai_response_content,
             "grammar_corrections": grammar_correction_result,
+            "optimization": optimization_result,
             "conversation_id": conversation.id
         }
 

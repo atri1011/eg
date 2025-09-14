@@ -189,6 +189,18 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
               }
             </div>
 
+            {/* 四级优化显示 */}
+            {message.type === 'user' && message.optimization && Object.keys(message.optimization).length > 0 && (
+              <div className="mt-3 max-w-[85%] w-auto">
+                <div className="bg-gray-200 text-black rounded-2xl px-4 py-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-lg text-xs font-medium">优化</span>
+                    <span className="text-sm font-medium">{message.optimization.optimized_sentence}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 语法纠错显示 */}
             {message.type === 'user' && message.corrections && Object.keys(message.corrections).length > 0 && (
               <div className="mt-3 max-w-[85%] w-auto">

@@ -118,8 +118,12 @@ export const useChat = (config) => {
         
         setMessages(currentMessages => {
           const updatedMessages = currentMessages.map(msg =>
-            msg.id === userMessage.id && data.grammar_corrections
-              ? { ...msg, corrections: data.grammar_corrections }
+            msg.id === userMessage.id 
+              ? { 
+                  ...msg, 
+                  corrections: data.grammar_corrections,
+                  optimization: data.optimization
+                }
               : msg
           );
           return [...updatedMessages, aiMessage];

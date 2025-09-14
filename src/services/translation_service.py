@@ -239,12 +239,94 @@ class TranslationService:
         print("[ERROR] 所有重试尝试均失败")
         raise Exception("所有重试尝试均失败")
 
-    def process_user_input(self, user_message: str) -> tuple[str, Optional[Dict]]:
+    def optimize_for_cet4(self, text: str) -> Optional[Dict]:
         """
-        处理用户输入，返回处理后的消息和纠错结果
-        返回: (处理后的消息, 纠错结果)
+        优化用户输入文本，使其更适合四级水平
+        处理中英混合输入，将其转换为四级水平的英文句子
+        """
+        print(f"[DEBUG] 开始四级优化，文本: {text}")
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        system_prompt = """你是一位专业的英语四级考试写作指导老师。你的任务是将用户输入的句子优化为更符合英语四级水平的表达。
+
+**优化任务:**
+1. 将中英混合的句子转换为纯英文句子
+2. 将中文词汇替换为合适的四级水平英文单词
+3. 调整句式结构，使其符合四级写作要求
+4. 确保语法正确、表达自然
+
+**优化标准:**
+- 使用四级词汇范围内的单词
+- 句式不要过于复杂，但要符合英语表达习惯
+- 保持原句的核心意思
+- 语法结构清晰正确
+
+**返回格式:**
+只返回优化后的英文句子，不要包含任何解释或其他内容。
+
+**示例:**
+输入: "i want to buy a 电脑 for study"
+输出: "I want to buy a computer for studying."
+
+输入: "这个problem很difficult"  
+输出: "This problem is very difficult."
+
+**重要指令:**
+* 只返回优化后的句子，不要添加引号或其他标记
+* 确保句子符合四级英语水平
+* 保持句子的完整性和自然度"""
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": text
+                }
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.2
+        }
+
+        try:
+            response = requests.post(
+                self.chat_completions_url, headers=headers, json=payload, timeout=15)
+            response.raise_for_status()
+            result = response.json()
+            optimized_text = result["choices"][0]["message"]["content"].strip()
+            print(f"[DEBUG] 四级优化结果: {optimized_text}")
+
+            # 如果有优化结果，返回优化数据
+            if optimized_text:
+                # 对比原文，如果确实不同才返回
+                if optimized_text.strip().lower() != text.strip().lower():
+                    return {
+                        "original_sentence": text,
+                        "optimized_sentence": optimized_text,
+                        "optimization_type": "cet4_level"
+                    }
+                else:
+                    print(f"[DEBUG] 优化结果与原文相同，不返回优化数据")
+            return None
+        except Exception as e:
+            print(f"[ERROR] 四级优化失败: {e}")
+            return None
+
+    def process_user_input(self, user_message: str) -> tuple[str, Optional[Dict], Optional[Dict]]:
+        """
+        处理用户输入，返回处理后的消息、纠错结果和优化结果
+        返回: (处理后的消息, 纠错结果, 优化结果)
         """
         grammar_correction_result = None
+        optimization_result = None
         message_for_ai = user_message
 
         try:
@@ -271,8 +353,16 @@ class TranslationService:
                         "corrected_sentence", user_message)
                     print(f"[DEBUG] 语法纠错完成，用于AI对话的消息: {message_for_ai}")
 
-            return message_for_ai, grammar_correction_result
+            # 2. 对原始用户输入进行四级优化
+            print(f"[DEBUG] 开始四级优化处理")
+            optimization_result = self.optimize_for_cet4(user_message)
+            if optimization_result:
+                # 如果有优化结果，使用优化后的文本作为最终的AI输入
+                message_for_ai = optimization_result.get("optimized_sentence", message_for_ai)
+                print(f"[DEBUG] 四级优化完成，最终用于AI对话的消息: {message_for_ai}")
+
+            return message_for_ai, grammar_correction_result, optimization_result
 
         except Exception as e:
             print(f"[ERROR] 处理用户输入失败: {e}")
-            return user_message, None
+            return user_message, None, None

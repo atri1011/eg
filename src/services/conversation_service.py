@@ -69,13 +69,14 @@ class ConversationService:
         return new_conversation
 
     @staticmethod
-    def add_message(conversation_id, role, content, corrections=None):
+    def add_message(conversation_id, role, content, corrections=None, optimization=None):
         """向会话中添加一条新消息。"""
         message = Message(
             conversation_id=conversation_id,
             role=role,
             content=content,
-            corrections=corrections
+            corrections=corrections,
+            optimization=optimization
         )
         db.session.add(message)
         db.session.commit()

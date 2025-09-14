@@ -79,6 +79,7 @@ def get_conversation_messages(conversation_id):
                 'type': 'user' if message.role == 'user' else 'ai',
                 'content': message.content,
                 'corrections': message.corrections,
+                'optimization': message.optimization,
                 'timestamp': message.created_at.strftime('%H:%M:%S'),
                 'created_at': message.created_at.isoformat()
             }

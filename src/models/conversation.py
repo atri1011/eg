@@ -26,6 +26,7 @@ class Message(db.Model):
     role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
     corrections = db.Column(db.JSON, nullable=True)
+    optimization = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -35,5 +36,6 @@ class Message(db.Model):
             'role': self.role,
             'content': self.content,
             'corrections': self.corrections,
+            'optimization': self.optimization,
             'created_at': self.created_at.isoformat()
         }
