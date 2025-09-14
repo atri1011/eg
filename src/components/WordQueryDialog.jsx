@@ -23,6 +23,35 @@ const WordQueryDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [currentStep, setCurrentStep] = useState('vocab-selection'); // 'vocab-selection' | 'analysis'
+  const [isQuickMode, setIsQuickMode] = useState(false); // 快速查询模式
+
+  // 检测是否为单个单词
+  const isSingleWord = (text) => {
+    if (!text || text.trim().length === 0) return false;
+    const trimmedText = text.trim();
+    const singleWordRegex = /^[a-zA-Z]+(?:[-'][a-zA-Z]*)*$/;
+    return singleWordRegex.test(trimmedText) && !trimmedText.includes(' ');
+  };
+
+  // 快速查询单个词汇
+  const handleQuickQuery = async () => {
+    if (!selectedText.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await onWordQuery(selectedText, context, [selectedText.trim()]);
+      setAnalysisResult(result);
+      setCurrentStep('analysis');
+    } catch (error) {
+      console.error('快速查询失败:', error);
+      setAnalysisResult({
+        error: '查询失败，请稍后再试'
+      });
+      setCurrentStep('analysis');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 提取单词
   const extractWords = (text) => {
@@ -96,9 +125,44 @@ const WordQueryDialog = ({
             {currentStep === 'vocab-selection' ? '句子解析 - 生词选择' : '句子解析 - 分析结果'}
           </DialogTitle>
         </DialogHeader>
+        
+        {/* 进度指示器 */}
+        <div className="flex items-center justify-center mb-6 px-6 pt-6 md:px-6 md:pt-6 progress-indicator-mobile">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            {/* 步骤1 */}
+            <div className={`flex items-center progress-step-transition ${currentStep === 'vocab-selection' ? 'text-blue-600' : 'text-green-600'}`}>
+              <div className={`w-7 h-7 md:w-8 md:h-8 progress-circle-mobile rounded-full flex items-center justify-center border-2 progress-step-transition ${
+                currentStep === 'vocab-selection' 
+                  ? 'border-blue-600 bg-blue-50 text-blue-600' 
+                  : 'border-green-600 bg-green-600 text-white'
+              }`}>
+                {currentStep === 'vocab-selection' ? '1' : <span className="progress-checkmark">✓</span>}
+              </div>
+              <span className="ml-1 md:ml-2 text-xs md:text-sm font-medium progress-step-mobile">选择生词</span>
+            </div>
+            
+            {/* 连接线 */}
+            <div className={`w-12 md:w-16 h-0.5 transition-all duration-500 ${currentStep === 'analysis' ? 'bg-green-600' : 'bg-gray-300'}`}></div>
+            
+            {/* 步骤2 */}
+            <div className={`flex items-center progress-step-transition ${
+              currentStep === 'analysis' ? 'text-blue-600' : 'text-gray-400'
+            }`}>
+              <div className={`w-7 h-7 md:w-8 md:h-8 progress-circle-mobile rounded-full flex items-center justify-center border-2 progress-step-transition ${
+                currentStep === 'analysis' 
+                  ? 'border-blue-600 bg-blue-50 text-blue-600' 
+                  : 'border-gray-300 bg-gray-50 text-gray-400'
+              }`}>
+                2
+              </div>
+              <span className="ml-1 md:ml-2 text-xs md:text-sm font-medium progress-step-mobile">查看解析</span>
+            </div>
+          </div>
+        </div>
+        
         {currentStep === 'vocab-selection' ? (
           // 第一步：生词选择界面
-          <div className="p-6">
+          <div className="p-4 md:p-6 step-transition-enter word-query-mobile">
             {/* 顶部选中文本显示 */}
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -117,6 +181,29 @@ const WordQueryDialog = ({
                 <h2 className="text-xl font-bold text-gray-800">句子解析</h2>
               </div>
               <p className="text-gray-600 mb-6">选择你不认识的单词，我们将为你解析整个句子</p>
+              
+              {/* 如果是单个单词，显示快速查询选项 */}
+              {isSingleWord(selectedText) && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Search className="w-5 h-5 text-blue-600" />
+                      <span className="text-blue-800 font-medium">快速查询单词</span>
+                    </div>
+                    <Button
+                      onClick={handleQuickQuery}
+                      disabled={isLoading}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {isLoading ? '查询中...' : '直接查询'}
+                    </Button>
+                  </div>
+                  <p className="text-blue-700 text-sm mt-2">
+                    直接查询 "{selectedText}" 的意思和用法，无需选择生词
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 生词选择区域 */}
@@ -126,18 +213,21 @@ const WordQueryDialog = ({
                 <h3 className="text-lg font-bold text-gray-800">选择生词 ({selectedVocab.length} 个已选)</h3>
               </div>
               
-              <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex flex-wrap gap-2 md:gap-3 mb-6">
                 {words.map((word, index) => (
                   <button
                     key={index}
                     onClick={() => toggleVocabSelection(word)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-3 py-2 md:px-4 md:py-2 vocab-button-mobile rounded-full text-xs md:text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                       selectedVocab.includes(word)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:shadow-lg border-2 border-blue-500'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-transparent hover:border-gray-300 shadow-sm hover:shadow-md'
                     }`}
                   >
                     {word}
+                    {selectedVocab.includes(word) && (
+                      <span className="ml-1 text-xs">✓</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -151,7 +241,7 @@ const WordQueryDialog = ({
             <Button 
               onClick={handleAnalyzeSentence}
               disabled={selectedVocab.length === 0 || isLoading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 rounded-2xl shadow-lg"
+              className="w-full bg-green-600 hover:bg-green-700 text-white text-sm md:text-lg py-3 md:py-4 rounded-2xl shadow-lg word-query-button-mobile"
               size="lg"
             >
               <Search className="w-5 h-5 mr-2" />
@@ -160,7 +250,7 @@ const WordQueryDialog = ({
           </div>
         ) : (
           // 第二步：解析结果界面
-          <div className="p-6">
+          <div className="p-4 md:p-6 step-transition-enter word-query-mobile">
             {/* 返回按钮 */}
             <div className="mb-4">
               <Button

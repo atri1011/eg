@@ -109,6 +109,15 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
     return textRegex.test(trimmedText) && trimmedText.length > 1;
   }, []);
 
+  // 检测是否为单个单词
+  const isSingleWord = useCallback((text) => {
+    if (!text || text.trim().length === 0) return false;
+    const trimmedText = text.trim();
+    // 单个单词：只包含字母、连字符或撇号，没有空格
+    const singleWordRegex = /^[a-zA-Z]+(?:[-'][a-zA-Z]*)*$/;
+    return singleWordRegex.test(trimmedText) && !trimmedText.includes(' ');
+  }, []);
+
   // 处理文本选择
   const handleTextSelection = useCallback(() => {
     const selection = window.getSelection();
@@ -125,21 +134,38 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
       const endIndex = Math.min(fullText.length, fullText.indexOf(selectedText) + selectedText.length + 50);
       const context = fullText.substring(startIndex, endIndex);
       
+      // 智能定位逻辑
+      const buttonWidth = 120; // 估算按钮宽度
+      const buttonHeight = 40; // 估算按钮高度
+      const padding = 10; // 边距
+      
+      let x = rect.left + rect.width / 2;
+      let y = rect.top - buttonHeight - padding;
+      
+      // 水平方向边界检查
+      if (x - buttonWidth / 2 < padding) {
+        x = buttonWidth / 2 + padding;
+      } else if (x + buttonWidth / 2 > window.innerWidth - padding) {
+        x = window.innerWidth - buttonWidth / 2 - padding;
+      }
+      
+      // 垂直方向边界检查
+      if (y < padding) {
+        y = rect.bottom + padding; // 如果上方空间不足，显示在下方
+      }
+      
       setSelectedText(selectedText);
       setSelectedContext(context);
-      setSelectionPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10
-      });
+      setSelectionPosition({ x, y });
       setShowQueryButton(true);
       
-      // 3秒后自动隐藏按钮
+      // 8秒后自动隐藏按钮
       if (selectionTimeoutRef.current) {
         clearTimeout(selectionTimeoutRef.current);
       }
       selectionTimeoutRef.current = setTimeout(() => {
         setShowQueryButton(false);
-      }, 3000);
+      }, 8000);
     } else {
       setShowQueryButton(false);
     }
@@ -150,6 +176,15 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
     setShowQueryButton(false);
     setShowWordDialog(true);
     window.getSelection().removeAllRanges();
+  }, []);
+
+  // 处理快速单词查询
+  const handleQuickWordQuery = useCallback(async () => {
+    setShowQueryButton(false);
+    window.getSelection().removeAllRanges();
+    
+    // 直接打开对话框并预设为快速查询模式
+    setShowWordDialog(true);
   }, []);
 
   // 处理对话框关闭
@@ -215,21 +250,54 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
       {/* 悬浮查询按钮 */}
       {showQueryButton && (
         <div
-          className="fixed z-50 animate-in fade-in-50 zoom-in-95"
+          className="fixed z-50 animate-in fade-in-50 zoom-in-95 duration-300"
           style={{
-            left: `${Math.min(Math.max(selectionPosition.x, 80), window.innerWidth - 80)}px`,
-            top: `${Math.max(selectionPosition.y, 60)}px`,
+            left: `${selectionPosition.x}px`,
+            top: `${selectionPosition.y}px`,
             transform: 'translateX(-50%)'
           }}
         >
-          <Button
-            size="sm"
-            onClick={handleQueryClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg border border-white/20 backdrop-blur-sm text-xs"
-          >
-            <Search className="w-3 h-3 mr-1" />
-            查询词汇
-          </Button>
+          {/* 指示箭头 - 根据位置动态调整 */}
+          <div 
+            className={`absolute left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-transparent ${
+              selectionPosition.y > 100 
+                ? 'top-full border-t-6 border-t-blue-600' 
+                : 'bottom-full border-b-6 border-b-blue-600'
+            }`}
+          ></div>
+          
+          {/* 根据选中文本类型显示不同按钮 */}
+          {isSingleWord(selectedText) ? (
+            // 单个单词：显示快速查询和详细解析两个选项
+            <div className="flex space-x-2">
+              <Button
+                size="sm"
+                onClick={handleQuickWordQuery}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl border border-white/20 backdrop-blur-sm text-xs transition-all duration-200 transform hover:scale-105"
+              >
+                <Search className="w-3 h-3 mr-1" />
+                快速查询
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleQueryClick}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl border border-white/20 backdrop-blur-sm text-xs transition-all duration-200 transform hover:scale-105"
+              >
+                <Search className="w-3 h-3 mr-1" />
+                句子解析
+              </Button>
+            </div>
+          ) : (
+            // 多个单词或句子：只显示句子解析选项
+            <Button
+              size="sm"
+              onClick={handleQueryClick}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl border border-white/20 backdrop-blur-sm text-xs transition-all duration-200 transform hover:scale-105"
+            >
+              <Search className="w-3 h-3 mr-1 animate-pulse" />
+              句子解析
+            </Button>
+          )}
         </div>
       )}
 

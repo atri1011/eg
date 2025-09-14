@@ -262,20 +262,118 @@
     transition: all 0.2s ease-in-out;
   }
 
-  /* 响应式优化 */
+  /* 词汇查询相关动画 */
+  .word-query-button {
+    animation: buttonPulse 2s infinite;
+  }
+
+  @keyframes buttonPulse {
+    0%, 100% {
+      box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+    }
+    50% {
+      box-shadow: 0 4px 20px 0 rgba(59, 130, 246, 0.6);
+    }
+  }
+
+  /* 生词选择按钮动画 */
+  .vocab-button-selected {
+    animation: selectBounce 0.3s ease-out;
+  }
+
+  @keyframes selectBounce {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* 进度指示器动画 */
+  .progress-step-transition {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-checkmark {
+    animation: checkmarkFade 0.5s ease-in-out;
+  }
+
+  @keyframes checkmarkFade {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* 对话框步骤切换动画 */
+  .step-transition-enter {
+    animation: stepSlideIn 0.4s ease-out;
+  }
+
+  .step-transition-exit {
+    animation: stepSlideOut 0.3s ease-in;
+  }
+
+  @keyframes stepSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes stepSlideOut {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+  }
+
+  /* 移动端词汇查询优化 */
   @media (max-width: 768px) {
-    .optimization-panel {
-      margin-left: 0;
-      margin-right: 0;
-      max-width: 95%;
+    .word-query-mobile {
+      padding: 12px;
     }
     
-    .diff-text {
+    .word-query-button-mobile {
+      min-height: 44px;
+      font-size: 14px;
+      padding: 8px 16px;
+    }
+    
+    .vocab-button-mobile {
+      min-height: 40px;
       font-size: 13px;
-      line-height: 1.4;
+      padding: 8px 12px;
+      margin: 4px 2px;
     }
     
-    .tab-buttons {
+    .progress-indicator-mobile {
+      padding: 16px 12px;
+    }
+    
+    .progress-step-mobile {
+      font-size: 12px;
+    }
+    
+    .progress-circle-mobile {
+      width: 28px;
+      height: 28px;
       font-size: 12px;
     }
   }
