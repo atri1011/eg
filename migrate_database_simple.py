@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-数据库迁移脚本 - 添加 corrections 字段
-用于修复 Vercel 部署中 message 表缺少 corrections 字段的问题
+数据库迁移脚本 - 添加 optimization 字段
+用于修复 Vercel 部署中 message 表缺少 optimization 字段的问题
 """
 
 import os
@@ -63,19 +63,22 @@ def run_postgresql_migration(database_url, migration_sql):
     try:
         with connection.cursor() as cursor:
             print("数据库连接成功")
+
+            # 检查字段是否存在
+            cursor.execute("""
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'message' AND column_name = 'optimization'
+            """)
             
-            # 执行迁移脚本
-            print("执行迁移脚本...")
-            cursor.execute(migration_sql)
-            
-            # 获取执行结果
-            if cursor.description:  # 有返回结果
-                results = cursor.fetchall()
-                if results:
-                    print("字段验证结果:")
-                    for row in results:
-                        print(f"   表: {row[0]}, 字段: {row[1]}, 类型: {row[2]}, 可空: {row[3]}")
-            
+            if cursor.fetchone():
+                print("optimization 字段已存在")
+            else:
+                print("添加 optimization 字段...")
+                # 从 migration_sql 中提取 ALTER TABLE 语句
+                alter_statement = [line for line in migration_sql.split(';') if 'ALTER TABLE' in line][0]
+                cursor.execute(alter_statement.strip())
+                print("optimization 字段添加成功")
+
             connection.commit()
             print("迁移成功完成！")
             return True
@@ -102,12 +105,12 @@ def run_sqlite_migration(database_url, migration_sql):
         cursor.execute("PRAGMA table_info(message)")
         columns = [column[1] for column in cursor.fetchall()]
         
-        if 'corrections' not in columns:
-            print("添加 corrections 字段...")
-            cursor.execute("ALTER TABLE message ADD COLUMN corrections TEXT")
-            print("corrections 字段添加成功")
+        if 'optimization' not in columns:
+            print("添加 optimization 字段...")
+            cursor.execute("ALTER TABLE message ADD COLUMN optimization TEXT")
+            print("optimization 字段添加成功")
         else:
-            print("corrections 字段已存在")
+            print("optimization 字段已存在")
         
         connection.commit()
         print("迁移成功完成！")
