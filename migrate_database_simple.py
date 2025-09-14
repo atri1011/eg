@@ -23,7 +23,7 @@ def run_migration():
         return False
     
     # 读取迁移脚本
-    migration_file = os.path.join(os.path.dirname(__file__), 'database_migration_add_corrections.sql')
+    migration_file = os.path.join(os.path.dirname(__file__), 'database_migration_add_optimization.sql')
     
     try:
         with open(migration_file, 'r', encoding='utf-8') as f:
