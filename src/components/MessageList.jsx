@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Sparkles, MessageCircle, Search } from 'lucide-react';
 import WordQueryDialog from './WordQueryDialog.jsx';
+import OptimizationPanel from './OptimizationPanel.jsx';
 
 // Function to render AI messages sentence by sentence with translation
 const renderSegmentedMessage = (content, translation) => {
@@ -189,65 +190,12 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
               }
             </div>
 
-            {/* 四级优化显示 */}
-            {message.type === 'user' && message.optimization && Object.keys(message.optimization).length > 0 && (
-              <div className="mt-3 max-w-[85%] w-auto">
-                <div className="bg-gray-200 text-black rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-lg text-xs font-medium">优化</span>
-                    <span className="text-sm font-medium">{message.optimization.optimized_sentence}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 语法纠错显示 */}
-            {message.type === 'user' && message.corrections && Object.keys(message.corrections).length > 0 && (
-              <div className="mt-3 max-w-[85%] w-auto">
-                <div className="bg-gray-100 rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-orange-500">✨</span>
-                    <span className="text-gray-700 font-medium text-sm">语法纠错：</span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {/* 整句纠错显示 */}
-                    <div className="bg-white rounded-xl p-3 shadow-sm">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                        <span className="text-red-600 line-through text-sm">{message.corrections.original_sentence}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
-                        <span className="text-green-600 text-sm font-medium">{message.corrections.corrected_sentence}</span>
-                      </div>
-                    </div>
-                    
-                    {/* 单个翻译错误显示 */}
-                    {message.corrections.corrections && message.corrections.corrections
-                      .filter(c => c.type === 'translation')
-                      .map((correction, index) => (
-                        <div key={index} className="bg-white rounded-xl p-3 shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">错误</span>
-                              <span className="text-red-600 line-through text-sm font-medium">
-                                {correction.original}
-                              </span>
-                            </div>
-                            <span className="text-gray-400">→</span>
-                            <div className="flex items-center gap-2">
-                              <span className="bg-green-100 text-green-600 px-2 py-1 rounded-lg text-xs font-medium">正确</span>
-                              <span className="text-green-600 text-sm font-medium">
-                                {correction.corrected}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
+            {/* 优化面板显示 */}
+            {message.type === 'user' && (message.corrections || message.optimization) && (
+              <OptimizationPanel
+                corrections={message.corrections}
+                optimization={message.optimization}
+              />
             )}
           </div>
         ))
