@@ -82,7 +82,7 @@ class TranslationClient:
                                     message_for_ai = corrected
                             elif task_type == "optimization" and result:
                                 optimization_result = result
-                                message_for_ai = result.get("optimized_sentence", message_for_ai)
+                                # 不修改 message_for_ai，保持用户原始输入发送给AI
                                 
                         except Exception as e:
                             print(f"[ERROR] {task_type} 任务执行失败: {e}")
@@ -165,7 +165,7 @@ class TranslationClient:
                                     message_for_ai = corrected
                             elif task_type == "optimization" and result:
                                 optimization_result = result
-                                message_for_ai = result.get("optimized_sentence", message_for_ai)
+                                # 不修改 message_for_ai，保持用户原始输入发送给AI
                                 
                         except Exception as e:
                             print(f"[ERROR] {task_type} 任务执行失败: {e}")
