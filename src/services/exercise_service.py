@@ -5,26 +5,22 @@ import time
 import logging
 from typing import List, Dict
 
+from ..config.api_config import ApiConfig
+
 logger = logging.getLogger(__name__)
 
 
 class ExerciseService:
     """AI练习题生成服务"""
 
-    def __init__(self, api_base: str, api_key: str, model: str):
-        self.api_base = api_base
-        self.api_key = api_key
-        self.model = model
-        self.chat_completions_url = f"{api_base}/chat/completions"
+    def __init__(self, api_config: ApiConfig):
+        self.api_config = api_config
 
     def generate_exercises(self, grammar_point: Dict, count: int = 10, difficulty: str = "medium") -> List[Dict]:
         """使用AI生成语法练习题"""
         print(f"[DEBUG] 开始AI生成练习题，语法点: {grammar_point.get('name')}")
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = self.api_config.get_headers()
 
         # 构建生成练习题的系统提示
         difficulty_map = {
@@ -87,7 +83,7 @@ class ExerciseService:
 """
 
         payload = {
-            "model": self.model,
+            "model": self.api_config.model,
             "messages": [
                 {
                     "role": "system",
@@ -108,9 +104,9 @@ class ExerciseService:
         for attempt in range(max_retries):
             try:
                 print(
-                    f"[DEBUG] 发送生成练习题请求到: {self.chat_completions_url} (尝试 {attempt + 1})")
+                    f"[DEBUG] 发送生成练习题请求到: {self.api_config.chat_completions_url} (尝试 {attempt + 1})")
                 response = requests.post(
-                    self.chat_completions_url, headers=headers, json=payload, timeout=30)
+                    self.api_config.chat_completions_url, headers=headers, json=payload, timeout=30)
 
                 if response.status_code == 429:
                     print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")

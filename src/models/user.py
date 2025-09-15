@@ -30,14 +30,14 @@ class User(db.Model):
             'email': self.email,
             'exp': datetime.utcnow().timestamp() + 24 * 60 * 60  # 24小时过期
         }
-        secret_key = os.environ.get('SECRET_KEY', 'fallback-secret')
+        secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
         return jwt.encode(payload, secret_key, algorithm='HS256')
 
     @staticmethod
     def verify_token(token):
         """验证JWT令牌"""
         try:
-            secret_key = os.environ.get('SECRET_KEY', 'fallback-secret')
+            secret_key = os.environ.get('SECRET_KEY', 'default-secret-key')
             payload = jwt.decode(token, secret_key, algorithms=['HS256'])
             return User.query.get(payload['user_id'])
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, KeyError):

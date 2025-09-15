@@ -3,17 +3,16 @@ import re
 import logging
 from typing import Optional, Dict
 
+from ..config.api_config import ApiConfig
+
 logger = logging.getLogger(__name__)
 
 
 class TranslationCore:
     """核心翻译服务 - 负责基础的中英文互译功能"""
 
-    def __init__(self, api_base: str, api_key: str, model: str):
-        self.api_base = api_base
-        self.api_key = api_key
-        self.model = model
-        self.chat_completions_url = f"{api_base}/chat/completions"
+    def __init__(self, api_config: ApiConfig):
+        self.api_config = api_config
 
     @staticmethod
     def is_chinese_text(text: str) -> bool:
@@ -35,10 +34,7 @@ class TranslationCore:
         """将中文翻译成英文"""
         print(f"[DEBUG] 开始中文翻译，文本: {chinese_text}")
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = self.api_config.get_headers()
 
         system_prompt = """你是一位专业的中英翻译专家。请将用户提供的中文句子翻译成地道的英文。
 
@@ -52,25 +48,20 @@ class TranslationCore:
 * 不要使用引号或其他标记包裹翻译结果
 * 确保翻译的准确性和自然度"""
 
-        payload = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": chinese_text
-                }
-            ],
-            "max_tokens": 1000,
-            "temperature": 0.1
-        }
+        payload = self.api_config.get_request_payload([
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": chinese_text
+            }
+        ], max_tokens=1000, temperature=0.1)
 
         try:
             response = requests.post(
-                self.chat_completions_url, headers=headers, json=payload, timeout=15)
+                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=15)
             response.raise_for_status()
             result = response.json()
             translation = result["choices"][0]["message"]["content"].strip()
@@ -98,10 +89,7 @@ class TranslationCore:
 
     def translate_with_context(self, text: str, context_info: str = None) -> str:
         """根据上下文进行翻译优化"""
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = self.api_config.get_headers()
 
         context_prompt = f"""
 **对话上下文信息:**
@@ -123,25 +111,20 @@ class TranslationCore:
 * 不要使用引号或其他标记包裹翻译结果
 * 确保翻译在当前语境下自然且准确"""
 
-        payload = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": text
-                }
-            ],
-            "max_tokens": 1000,
-            "temperature": 0.1
-        }
+        payload = self.api_config.get_request_payload([
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": text
+            }
+        ], max_tokens=1000, temperature=0.1)
 
         try:
             response = requests.post(
-                self.chat_completions_url, headers=headers, json=payload, timeout=15)
+                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=15)
             response.raise_for_status()
             result = response.json()
             translation = result["choices"][0]["message"]["content"].strip()

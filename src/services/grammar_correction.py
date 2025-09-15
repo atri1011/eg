@@ -5,17 +5,16 @@ import time
 import logging
 from typing import Optional, Dict
 
+from ..config.api_config import ApiConfig
+
 logger = logging.getLogger(__name__)
 
 
 class GrammarCorrection:
     """语法纠错服务 - 负责英文语法检查和纠错"""
 
-    def __init__(self, api_base: str, api_key: str, model: str):
-        self.api_base = api_base
-        self.api_key = api_key
-        self.model = model
-        self.chat_completions_url = f"{api_base}/chat/completions"
+    def __init__(self, api_config: ApiConfig):
+        self.api_config = api_config
 
     def get_detailed_corrections(self, text: str) -> Optional[Dict]:
         """
@@ -24,10 +23,7 @@ class GrammarCorrection:
         """
         print(f"[DEBUG] 开始详细语法检查和翻译，文本: {text}")
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = self.api_config.get_headers()
 
         system_prompt = """你是一位顶级的英语语法和翻译专家。你的任务是精确分析用户提供的句子，并始终返回一个结构化、详细的JSON对象。
 
@@ -65,9 +61,7 @@ class GrammarCorrection:
 }
 ```"""
 
-        payload = {
-            "model": self.model,
-            "messages": [
+        payload = self.api_config.get_request_payload([
                 {
                     "role": "system",
                     "content": system_prompt
@@ -76,10 +70,7 @@ class GrammarCorrection:
                     "role": "user",
                     "content": text
                 }
-            ],
-            "max_tokens": 1000000,
-            "temperature": 0.1
-        }
+        ], max_tokens=1000000, temperature=0.1)
 
         max_retries = 3
         retry_delay = 2
@@ -87,9 +78,9 @@ class GrammarCorrection:
         for attempt in range(max_retries):
             try:
                 print(
-                    f"[DEBUG] 发送详细修正请求到: {self.chat_completions_url} (尝试 {attempt + 1})")
+                    f"[DEBUG] 发送详细修正请求到: {self.api_config.chat_completions_url} (尝试 {attempt + 1})")
                 response = requests.post(
-                    self.chat_completions_url, headers=headers, json=payload, timeout=20)
+                    self.api_config.chat_completions_url, headers=headers, json=payload, timeout=20)
 
                 if response.status_code == 429:
                     print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")
@@ -164,10 +155,7 @@ class GrammarCorrection:
         """
         print(f"[DEBUG] 开始上下文感知语法检查，文本: {text}")
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = self.api_config.get_headers()
 
         system_prompt = f"""你是一位顶级的英语语法和翻译专家。你的任务是根据对话上下文，精确分析用户提供的句子，并返回结构化的JSON对象。
 
@@ -197,9 +185,7 @@ class GrammarCorrection:
 *   **无错误处理:** 如果句子在上下文中被视为合适，`corrected_sentence` 应与 `original_sentence` 相同，`corrections` 列表必须为空 `[]`。
 *   **严禁额外文本:** 绝对不要在JSON对象之外返回任何文本、注释或解释。"""
 
-        payload = {
-            "model": self.model,
-            "messages": [
+        payload = self.api_config.get_request_payload([
                 {
                     "role": "system",
                     "content": system_prompt
@@ -208,14 +194,11 @@ class GrammarCorrection:
                     "role": "user",
                     "content": text
                 }
-            ],
-            "max_tokens": 1000000,
-            "temperature": 0.1
-        }
+        ], max_tokens=1000000, temperature=0.1)
 
         try:
             response = requests.post(
-                self.chat_completions_url, headers=headers, json=payload, timeout=20)
+                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=20)
             response.raise_for_status()
             result = response.json()
             content = result["choices"][0]["message"]["content"].strip()

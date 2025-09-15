@@ -6,6 +6,7 @@ from typing import Optional, Dict, Tuple, List
 from .translation_core import TranslationCore
 from .grammar_correction import GrammarCorrection
 from .cet4_optimization import CET4Optimization
+from ..config.api_config import ApiConfig
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +17,10 @@ class TranslationClient:
     负责协调翻译、语法纠错、CET4优化等服务
     """
 
-    def __init__(self, api_base: str, api_key: str, model: str):
-        self.translation_core = TranslationCore(api_base, api_key, model)
-        self.grammar_correction = GrammarCorrection(api_base, api_key, model)
-        self.cet4_optimization = CET4Optimization(api_base, api_key, model)
+    def __init__(self, api_config: ApiConfig):
+        self.translation_core = TranslationCore(api_config)
+        self.grammar_correction = GrammarCorrection(api_config)
+        self.cet4_optimization = CET4Optimization(api_config)
 
     def is_chinese_text(self, text: str) -> bool:
         """检测文本是否主要是中文"""

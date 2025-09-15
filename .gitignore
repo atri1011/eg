@@ -1,3 +1,4 @@
+
 node_modules
 .env
 
@@ -31,3 +32,5 @@ docs/
 .spec-workflow/templates/requirements-template.md
 .spec-workflow/templates/structure-template.md
 .spec-workflow/templates/tasks-template.md
+CLAUDE.md
+.claude/index.json

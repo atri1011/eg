@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from src.services.exercise_service import ExerciseService
+from src.config.api_config import ApiConfig
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,9 @@ def generate_grammar_exercises():
     difficulty = settings.get("difficulty", "medium")
 
     try:
-        exercise_service = ExerciseService(api_base, api_key, model)
+        # 创建API配置对象
+        api_config = ApiConfig(api_base=api_base, api_key=api_key, model=model)
+        exercise_service = ExerciseService(api_config)
         exercises = exercise_service.generate_exercises(
             grammar_point, count, difficulty)
         return jsonify({

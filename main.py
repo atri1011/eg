@@ -65,55 +65,10 @@ app.register_blueprint(exercise_bp, url_prefix='/api')
 app.register_blueprint(models_bp, url_prefix='/api')
 app.register_blueprint(word_query_bp, url_prefix='/api')
 
-# Enhanced database URL processing for IPv4 compatibility
-database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    if IS_PRODUCTION:
-        app.logger.error("DATABASE_URL environment variable is missing in production")
-        raise RuntimeError("DATABASE_URL environment variable is required in production")
-    database_url = 'sqlite:///database/app.db'
-
-if database_url:
-    app.logger.info(f"Processing database URL for environment: {ENVIRONMENT}")
-    
-    # Apply IPv4 resolution for PostgreSQL connections
-    if database_url.startswith(('postgres://', 'postgresql://')):
-        database_url = resolve_database_url_to_ipv4(database_url)
-    
-    # Convert relative database path to absolute path for SQLite
-    elif database_url.startswith('sqlite:///'):
-        db_path = database_url.replace('sqlite:///', '')
-        if not os.path.isabs(db_path):
-            project_root = os.path.dirname(os.path.abspath(__file__))
-            absolute_db_path = os.path.join(project_root, db_path)
-            database_url = f'sqlite:///{absolute_db_path}'
-
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# 生产环境数据库连接池配置
-if IS_PRODUCTION and database_url.startswith(('postgres', 'postgresql')):
-    # 强制使用 Supabase 连接池来避免 IPv6 问题
-    if 'supabase.co' in database_url:
-        # 修改为连接池端口 (6543) 而不是直连端口 (5432)
-        database_url = database_url.replace(':5432/', ':6543/')
-        app.logger.info("Using Supabase connection pooler (IPv4) instead of direct connection")
-    
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_size': 3,  # 减少连接数适配连接池
-        'pool_recycle': 300,
-        'pool_pre_ping': True,
-        'max_overflow': 5,
-        'pool_timeout': 30,
-        'connect_args': {
-            'sslmode': 'require',
-            'connect_timeout': 15
-        }
-    }
-    app.logger.info("PostgreSQL connection pool configured for production")
-
-# 更新配置后的 database_url
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# 应用数据库配置
+from src.config.database_config import DatabaseConfig
+db_config = DatabaseConfig(ENVIRONMENT)
+db_config.configure_app(app)
 
 db.init_app(app)
 

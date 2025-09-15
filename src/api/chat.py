@@ -3,6 +3,7 @@ from src.utils.decorators import auth_required
 from src.utils.auth import get_current_user
 from src.services.chat_service import ChatService
 from src.services.conversation_service import ConversationService
+from src.config.api_config import ApiConfig
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,9 @@ def chat():
     current_user = get_current_user()
 
     try:
-        chat_service = ChatService(api_base, api_key, model)
+        # 创建API配置对象
+        api_config = ApiConfig(api_base=api_base, api_key=api_key, model=model)
+        chat_service = ChatService(api_config)
         result = chat_service.process_chat_message(
             user_id=current_user.id,
             user_message=user_message,
