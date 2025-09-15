@@ -161,7 +161,9 @@ const OptimizationPanel = ({ corrections, optimization }) => {
                 }`}
               >
                 <AlertCircle className="w-3 h-3 mr-1" />
-                纠错 ({corrections.corrections.length})
+                {corrections.corrections?.some(c => c.type === 'translation') 
+                  ? '翻译' 
+                  : `纠错 (${corrections.corrections?.length || 0})`}
               </Button>
             )}
             {hasOptimization && (
@@ -186,6 +188,19 @@ const OptimizationPanel = ({ corrections, optimization }) => {
         {!selectedTab && (
           <div className="px-4 pb-4 border-t border-blue-100 bg-white/50">
             <div className="mt-3">
+              {/* 翻译预览 - 中文输入时显示 */}
+              {hasCorrections && corrections.corrections?.some(c => c.type === 'translation') && (
+                <div className="mb-3">
+                  <div className="mb-2">
+                    <span className="text-sm font-medium text-gray-700">翻译：</span>
+                  </div>
+                  <div className="text-sm text-purple-800 bg-purple-50 p-2 rounded">
+                    {corrections.corrections.find(c => c.type === 'translation')?.corrected || corrections.corrected_sentence}
+                  </div>
+                </div>
+              )}
+              
+              {/* 优化建议预览 */}
               {hasOptimization && (
                 <div className="mb-3">
                   <div className="mb-2">
@@ -197,9 +212,10 @@ const OptimizationPanel = ({ corrections, optimization }) => {
                 </div>
               )}
               
-              {hasCorrections && (
+              {/* 纠错提示 - 仅当有非翻译类型的纠错时显示 */}
+              {hasCorrections && corrections.corrections?.some(c => c.type !== 'translation') && (
                 <div className="text-xs text-gray-600">
-                  发现 {corrections.corrections.length} 处问题，点击"纠错"标签查看详情
+                  发现 {corrections.corrections.filter(c => c.type !== 'translation').length} 处问题，点击"纠错"标签查看详情
                 </div>
               )}
             </div>
