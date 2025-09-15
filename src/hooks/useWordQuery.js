@@ -17,22 +17,35 @@ export const useWordQuery = (config) => {
     setError(null);
 
     try {
-      const response = await fetch('/api/word-query', {
+      // 根据查询类型选择不同的API端点
+      const endpoint = selectedVocab.length > 0 ? '/api/analyze-sentence' : '/api/query-word';
+      const requestBody = selectedVocab.length > 0 
+        ? {
+            sentence: word.trim(),
+            context: context.trim(),
+            selectedVocab: selectedVocab,
+            config: {
+              apiBase: config.apiBase,
+              apiKey: config.apiKey,
+              model: config.customModel || config.model || 'gpt-3.5-turbo'
+            }
+          }
+        : {
+            word: word.trim(),
+            context: context.trim(),
+            config: {
+              apiBase: config.apiBase,
+              apiKey: config.apiKey,
+              model: config.customModel || config.model || 'gpt-3.5-turbo'
+            }
+          };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          word: word.trim(),
-          context: context.trim(),
-          selectedVocab: selectedVocab,
-          queryType: selectedVocab.length > 0 ? 'sentence-analysis' : 'word-query',
-          config: {
-            apiBase: config.apiBase,
-            apiKey: config.apiKey,
-            model: config.customModel || config.model || 'gpt-3.5-turbo'
-          }
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -45,7 +58,7 @@ export const useWordQuery = (config) => {
         throw new Error(data.error || '查询失败');
       }
 
-      return data.data;
+      return data.result;
 
     } catch (err) {
       const errorMessage = err.message || '网络错误，请检查网络连接';
