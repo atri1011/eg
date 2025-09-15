@@ -12,7 +12,6 @@ import ChatHistoryDialog from './ChatHistoryDialog';
 import NewChatButton from './NewChatButton';
 import ModeSelector from './ModeSelector';
 import ModeIndicator, { SimpleModeIndicator } from './ModeIndicator';
-import ModeGuidancePanel from './ModeGuidancePanel';
 import CompactToolbar from './CompactToolbar';
 import GrammarLearningModule from '../grammar/GrammarLearningModule';
 import GrammarReferenceLibrary from '../grammar/GrammarReferenceLibrary';
@@ -254,9 +253,6 @@ const ChatPage = () => {
         <div className="flex-1 overflow-hidden">
           {currentView === 'chat' ? (
             <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden h-full">
-              {/* 模式指导面板 - 紧凑布局 */}
-              <ModeGuidancePanel mode={currentMode} className="mx-3 mt-2 mb-1" />
-              
               <MessageList
                 messages={messages}
                 isLoading={isLoading}
@@ -273,6 +269,7 @@ const ChatPage = () => {
                 isLoading={isLoading}
                 config={config}
                 mode={currentMode}
+                messages={messages}
               />
             </div>
           ) : (
