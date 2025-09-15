@@ -26,8 +26,6 @@ class CET4Optimization:
         根据四级考试写作评分标准优化用户输入文本
         评分要点：清晰表达、文字连贯、语言错误少、切合题意
         """
-        print(f"[DEBUG] 开始四级优化，文本: {text}")
-
         headers = self.api_config.get_headers()
         system_prompt = CET4PromptTemplates.get_basic_optimization_prompt()
 
@@ -53,7 +51,6 @@ class CET4Optimization:
             response.raise_for_status()
             result = response.json()
             optimized_text = result["choices"][0]["message"]["content"].strip()
-            print(f"[DEBUG] 四级优化结果: {optimized_text}")
 
             # 检查是否有实际优化
             if optimized_text and optimized_text != text:
@@ -69,11 +66,22 @@ class CET4Optimization:
             print(f"[ERROR] 四级优化失败: {e}")
             return None
 
-    def optimize_with_context(self, text: str, context_info: str) -> Optional[str]:
+    def optimize_with_context(self, text: str, context_info: str) -> Optional[Dict]:
         """
         根据上下文进行CET4优化
         """
-        return self.analyzer.analyze_context_optimization(text, context_info)
+        optimized_text = self.analyzer.analyze_context_optimization(text, context_info)
+        
+        # 检查是否有实际优化
+        if optimized_text and optimized_text != text:
+            return {
+                "original_sentence": text,
+                "optimized_sentence": optimized_text,
+                "optimization_type": "cet4_context_aware",
+                "explanation": "根据对话上下文和四级考试写作评分标准进行优化，提升表达的自然度和语境适配性"
+            }
+        
+        return None
 
     def get_detailed_analysis(self, text: str) -> Optional[Dict]:
         """

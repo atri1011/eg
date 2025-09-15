@@ -116,7 +116,6 @@ class CET4Analyzer:
             response.raise_for_status()
             result = response.json()
             optimized = result["choices"][0]["message"]["content"].strip()
-            print(f"[DEBUG] 上下文CET4优化结果: {optimized}")
             return optimized
 
         except Exception as e:

@@ -31,7 +31,6 @@ class TranslationClient:
         并行处理用户输入：同时进行翻译/纠错和优化
         返回: (处理后的消息, 纠错结果, 优化结果)
         """
-        print(f"[DEBUG] 开始并行处理用户输入: {user_message}")
         
         grammar_correction_result = None
         optimization_result = None
@@ -44,14 +43,14 @@ class TranslationClient:
                 
                 # 1. 提交翻译/语法纠错任务
                 if self.is_chinese_text(user_message):
-                    print(f"[DEBUG] 检测到纯中文输入，提交翻译任务")
+                    # 提交翻译任务
                     future_translation = executor.submit(
                         self.translation_core.get_translation_from_chinese, 
                         user_message
                     )
                     futures.append(("translation", future_translation))
                 else:
-                    print(f"[DEBUG] 检测到英文或中英混合输入，提交语法纠错任务")
+                    # 提交语法纠错任务
                     future_grammar = executor.submit(
                         self.grammar_correction.get_detailed_corrections, 
                         user_message
@@ -86,7 +85,7 @@ class TranslationClient:
                     except Exception as e:
                         print(f"[ERROR] {task_type} 任务执行失败: {e}")
             
-            print(f"[DEBUG] 并行处理完成，最终消息: {message_for_ai}")
+            # 并行处理完成
             return message_for_ai, grammar_correction_result, optimization_result
             
         except Exception as e:
@@ -98,8 +97,6 @@ class TranslationClient:
         处理用户输入，带上下文感知的优化
         返回: (处理后的消息, 纠错结果, 优化结果)
         """
-        print(f"[DEBUG] 开始上下文感知处理用户输入: {user_message}")
-        print(f"[DEBUG] 对话历史条数: {len(conversation_history) if conversation_history else 0}")
         
         grammar_correction_result = None
         optimization_result = None
@@ -115,14 +112,14 @@ class TranslationClient:
                 
                 # 1. 提交翻译/语法纠错任务
                 if self.is_chinese_text(user_message):
-                    print(f"[DEBUG] 检测到纯中文输入，提交上下文翻译任务")
+                    # 提交上下文翻译任务
                     future_translation = executor.submit(
                         self.translation_core.translate_with_context, 
                         user_message, context_info
                     )
                     futures.append(("translation", future_translation))
                 else:
-                    print(f"[DEBUG] 检测到英文或中英混合输入，提交上下文语法纠错任务")
+                    # 提交上下文语法纠错任务
                     future_grammar = executor.submit(
                         self.grammar_correction.get_context_aware_corrections, 
                         user_message, context_info
@@ -170,7 +167,7 @@ class TranslationClient:
                     except Exception as e:
                         print(f"[ERROR] {task_type} 任务执行失败: {e}")
             
-            print(f"[DEBUG] 上下文感知处理完成，最终消息: {message_for_ai}")
+            # 上下文感知处理完成
             return message_for_ai, grammar_correction_result, optimization_result
             
         except Exception as e:
