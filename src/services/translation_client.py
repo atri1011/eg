@@ -79,8 +79,10 @@ class TranslationClient:
                                 message_for_ai = corrected
                         elif task_type == "optimization" and result:
                             optimization_result = result
-                            # 优化结果用于最终的AI对话
-                            message_for_ai = result.get("optimized_sentence", message_for_ai)
+                            # 对于中文输入，优化结果仅用于展示，不覆盖翻译结果
+                            # 对于英文输入，优化结果可以用于AI对话
+                            if not self.is_chinese_text(user_message):
+                                message_for_ai = result.get("optimized_sentence", message_for_ai)
                             
                     except Exception as e:
                         print(f"[ERROR] {task_type} 任务执行失败: {e}")
@@ -161,8 +163,10 @@ class TranslationClient:
                                 message_for_ai = corrected
                         elif task_type == "optimization" and result:
                             optimization_result = result
-                            # 优化结果用于最终的AI对话
-                            message_for_ai = result.get("optimized_sentence", message_for_ai)
+                            # 对于中文输入，优化结果仅用于展示，不覆盖翻译结果
+                            # 对于英文输入，优化结果可以用于AI对话
+                            if not self.is_chinese_text(user_message):
+                                message_for_ai = result.get("optimized_sentence", message_for_ai)
                             
                     except Exception as e:
                         print(f"[ERROR] {task_type} 任务执行失败: {e}")
