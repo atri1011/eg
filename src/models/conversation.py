@@ -6,6 +6,8 @@ class Conversation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
+    mode = db.Column(db.String(50), default='free_chat', nullable=False)
+    mode_config = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship(
         'Message', backref='conversation', lazy=True, cascade="all, delete-orphan")
@@ -15,6 +17,8 @@ class Conversation(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'title': self.title,
+            'mode': self.mode,
+            'mode_config': self.mode_config,
             'created_at': self.created_at.isoformat()
         }
 

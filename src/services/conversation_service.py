@@ -58,13 +58,24 @@ class ConversationService:
             return False, f"Failed to delete conversation: {str(e)}"
 
     @staticmethod
-    def create_or_get_conversation(user_id, conversation_id=None, first_message=""):
+    def create_or_get_conversation(user_id, conversation_id=None, first_message="", mode='free_chat', mode_config=None):
         """获取或创建会话。"""
         if conversation_id:
-            return Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
+            conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
+            # 如果传入了新的模式，更新会话模式
+            if conversation and mode != conversation.mode:
+                conversation.mode = mode
+                conversation.mode_config = mode_config
+                db.session.commit()
+            return conversation
 
         title = first_message[:50] if first_message else "New Conversation"
-        new_conversation = Conversation(user_id=user_id, title=title)
+        new_conversation = Conversation(
+            user_id=user_id, 
+            title=title,
+            mode=mode,
+            mode_config=mode_config
+        )
         db.session.add(new_conversation)
         db.session.commit()
         return new_conversation

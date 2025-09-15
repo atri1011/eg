@@ -18,6 +18,8 @@ def chat():
     user_message = data.get("message")
     config = data.get("config", {})
     conversation_id = data.get("conversation_id")
+    mode = data.get("mode", "free_chat")
+    mode_config = data.get("mode_config", {})
 
     if not user_message or not user_message.strip():
         return jsonify({"success": False, "error": "Message content is required."}), 400
@@ -40,7 +42,9 @@ def chat():
             user_id=current_user.id,
             user_message=user_message,
             conversation_id=conversation_id,
-            language_preference=language_preference
+            language_preference=language_preference,
+            mode=mode,
+            mode_config=mode_config
         )
         return jsonify({"success": True, **result})
 
@@ -74,6 +78,11 @@ def get_conversation_messages(conversation_id):
         if error:
             return jsonify({"success": False, "error": error}), 404
 
+        # 获取会话信息
+        from src.models.conversation import Conversation
+        conversation = Conversation.query.filter_by(
+            id=conversation_id, user_id=current_user.id).first()
+        
         # 格式化消息以适应前端
         messages_data = []
         for message in messages:
@@ -93,7 +102,11 @@ def get_conversation_messages(conversation_id):
                     message_data['translation'] = parts[1].strip()
             messages_data.append(message_data)
 
-        return jsonify({"success": True, "messages": messages_data})
+        return jsonify({
+            "success": True, 
+            "messages": messages_data,
+            "conversation": conversation.to_dict() if conversation else None
+        })
     except Exception as e:
         logger.error(
             f"Failed to get messages for conversation {conversation_id}: {e}")

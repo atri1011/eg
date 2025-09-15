@@ -10,6 +10,9 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import ChatHistoryDialog from './ChatHistoryDialog';
 import NewChatButton from './NewChatButton';
+import ModeSelector from './ModeSelector';
+import ModeIndicator, { SimpleModeIndicator } from './ModeIndicator';
+import ModeGuidancePanel from './ModeGuidancePanel';
 import GrammarLearningModule from '../grammar/GrammarLearningModule';
 import GrammarReferenceLibrary from '../grammar/GrammarReferenceLibrary';
 
@@ -39,6 +42,9 @@ const ChatPage = () => {
     handleKeyPress,
     messagesEndRef,
     currentConversationId,
+    currentMode,
+    modeConfig,
+    switchMode,
     loadConversationHistory,
     startNewConversation,
     editMessage,
@@ -50,8 +56,12 @@ const ChatPage = () => {
   const handleDeleteConversation = (deletedConversationId) => {
     // 如果删除的是当前正在显示的会话，则清空消息列表
     if (currentConversationId === deletedConversationId) {
-      startNewConversation();
+      startNewConversation(currentMode, modeConfig);
     }
+  };
+
+  const handleModeChange = (newMode) => {
+    switchMode(newMode, {});
   };
 
   return (
@@ -132,6 +142,16 @@ const ChatPage = () => {
             </Button>
           </div>
           
+          {/* 当前模式指示器 */}
+          <div className="flex items-center justify-between mb-3 px-2">
+            <SimpleModeIndicator mode={currentMode} />
+            <ModeSelector 
+              currentMode={currentMode} 
+              onModeChange={handleModeChange}
+              disabled={isLoading}
+            />
+          </div>
+          
           <div className="flex bg-white/70 backdrop-blur-sm rounded-2xl p-1 shadow-sm border border-white/30 mb-3">
             <Button
               variant={currentView === 'chat' ? 'default' : 'ghost'}
@@ -163,7 +183,7 @@ const ChatPage = () => {
               语法参考
             </Button>
             <NewChatButton 
-              onNewChat={startNewConversation}
+              onNewChat={() => startNewConversation(currentMode, modeConfig)}
               disabled={isLoading}
               className="flex-1"
             />
@@ -178,6 +198,16 @@ const ChatPage = () => {
         {/* 桌面端导航 */}
         <div className="hidden md:flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
+            {/* 模式指示器 */}
+            <ModeIndicator mode={currentMode} size="default" showLabel={true} />
+            
+            {/* 模式选择器 */}
+            <ModeSelector 
+              currentMode={currentMode} 
+              onModeChange={handleModeChange}
+              disabled={isLoading}
+            />
+
             {/* 视图切换按钮 */}
             <div className="flex bg-white/70 backdrop-blur-sm rounded-2xl p-1 shadow-sm border border-white/30">
               <Button
@@ -213,7 +243,7 @@ const ChatPage = () => {
 
             {/* 原有的按钮 */}
             <NewChatButton 
-              onNewChat={startNewConversation}
+              onNewChat={() => startNewConversation(currentMode, modeConfig)}
               disabled={isLoading}
             />
             <ChatHistoryDialog
@@ -238,6 +268,9 @@ const ChatPage = () => {
         <div className="flex-1 overflow-hidden">
           {currentView === 'chat' ? (
             <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden h-full">
+              {/* 模式指导面板 */}
+              <ModeGuidancePanel mode={currentMode} className="m-3" />
+              
               <MessageList
                 messages={messages}
                 isLoading={isLoading}
@@ -253,6 +286,7 @@ const ChatPage = () => {
                 sendMessage={sendMessage}
                 isLoading={isLoading}
                 config={config}
+                mode={currentMode}
               />
             </div>
           ) : (

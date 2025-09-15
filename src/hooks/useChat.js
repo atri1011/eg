@@ -6,6 +6,8 @@ export const useChat = (config) => {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [currentMode, setCurrentMode] = useState('free_chat');
+  const [modeConfig, setModeConfig] = useState({});
   const messagesEndRef = useRef(null);
   
   const { getAuthHeaders } = useAuth();
@@ -23,6 +25,8 @@ export const useChat = (config) => {
   const clearMessages = () => {
     setMessages([]);
     setCurrentConversationId(null);
+    setCurrentMode('free_chat');
+    setModeConfig({});
     localStorage.removeItem('aiEnglishMessages');
   };
 
@@ -47,6 +51,11 @@ export const useChat = (config) => {
       if (data.success) {
         setMessages(data.messages);
         setCurrentConversationId(conversationId);
+        // 设置会话的模式信息
+        if (data.conversation && data.conversation.mode) {
+          setCurrentMode(data.conversation.mode);
+          setModeConfig(data.conversation.mode_config || {});
+        }
       } else {
         console.error('加载会话历史失败:', data.error);
         alert(data.error || '加载会话历史失败');
@@ -57,9 +66,11 @@ export const useChat = (config) => {
     }
   };
 
-  const startNewConversation = () => {
+  const startNewConversation = (mode = 'free_chat', config = {}) => {
     setMessages([]);
     setCurrentConversationId(null);
+    setCurrentMode(mode);
+    setModeConfig(config);
     setInputText('');
   };
 
@@ -101,7 +112,9 @@ export const useChat = (config) => {
             ...config,
             model: modelToUse
           },
-          conversation_id: currentConversationId
+          conversation_id: currentConversationId,
+          mode: currentMode,
+          mode_config: modeConfig
         }),
       });
 
@@ -271,6 +284,12 @@ export const useChat = (config) => {
     }
   };
 
+  // 新增：切换对话模式的函数
+  const switchMode = (mode, config = {}) => {
+    setCurrentMode(mode);
+    setModeConfig(config);
+  };
+
   return {
     messages,
     inputText,
@@ -281,6 +300,9 @@ export const useChat = (config) => {
     handleKeyPress,
     messagesEndRef,
     currentConversationId,
+    currentMode,
+    modeConfig,
+    switchMode,
     loadConversationHistory,
     startNewConversation,
     editMessage,

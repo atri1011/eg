@@ -16,7 +16,7 @@ class ChatService:
         self.api_config = api_config
         self.translation_client = TranslationClient(api_config)
 
-    def process_chat_message(self, user_id: int, user_message: str, conversation_id: int = None, language_preference: str = 'en'):
+    def process_chat_message(self, user_id: int, user_message: str, conversation_id: int = None, language_preference: str = 'en', mode: str = 'free_chat', mode_config: dict = None):
         """
         处理用户聊天消息的完整流程。
         1. 获取或创建会话。
@@ -26,9 +26,9 @@ class ChatService:
         5. 获取历史消息并请求 AI。
         6. 保存 AI 回复。
         """
-        # 1. 获取或创建会话
+        # 1. 获取或创建会话，传入模式信息
         conversation = ConversationService.create_or_get_conversation(
-            user_id, conversation_id, user_message)
+            user_id, conversation_id, user_message, mode, mode_config)
 
         # 2. 获取历史消息作为上下文（在处理用户输入前）
         messages_history, error = ConversationService.get_messages_by_conversation_id(
@@ -66,7 +66,7 @@ class ChatService:
 
         messages_for_api = [{"role": msg.role, "content": msg.content}
                             for msg in messages_history]
-        system_prompt = build_system_prompt(language_preference)
+        system_prompt = build_system_prompt(language_preference, conversation.mode, conversation.mode_config)
         ai_response_content = self._send_chat_request(
             messages_for_api, system_prompt)
 
@@ -99,7 +99,7 @@ class ChatService:
         # 构建消息历史用于AI请求
         messages_for_api = [{"role": msg.role, "content": msg.content}
                             for msg in messages_history]
-        system_prompt = build_system_prompt(language_preference)
+        system_prompt = build_system_prompt(language_preference, conversation.mode, conversation.mode_config)
         ai_response_content = self._send_chat_request(
             messages_for_api, system_prompt)
 

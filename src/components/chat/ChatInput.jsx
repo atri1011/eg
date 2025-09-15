@@ -4,19 +4,32 @@ import { Textarea } from '@/components/ui/textarea.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Send, CheckCircle, AlertCircle } from 'lucide-react';
 
+// 模式相关的输入提示
+const MODE_PLACEHOLDERS = {
+  free_chat: "输入你想练习的英语句子...",
+  writing_enhancement: "分享你的英语写作，获得结构化指导...",
+  grammar_focus: "输入需要语法检查的英语句子...",
+  role_playing: "开始场景对话，比如：'Let's practice a job interview'...",
+  topic_discussion: "选择一个话题开始深度讨论...",
+  cet_preparation: "练习四六级相关内容，如词汇、写作、翻译..."
+};
+
 const ChatInput = ({ 
   inputText, 
   setInputText, 
   handleKeyPress, 
   sendMessage, 
   isLoading, 
-  config 
+  config,
+  mode = 'free_chat'
 }) => {
+  const placeholder = MODE_PLACEHOLDERS[mode] || MODE_PLACEHOLDERS.free_chat;
+  
   return (
     <div className="p-3 md:p-4 border-t border-gray-200 bg-white/60">
       <div className="flex space-x-2">
         <Textarea
-          placeholder="输入你想练习的英语句子..."
+          placeholder={placeholder}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyPress={handleKeyPress}
