@@ -13,6 +13,7 @@ import NewChatButton from './NewChatButton';
 import ModeSelector from './ModeSelector';
 import ModeIndicator, { SimpleModeIndicator } from './ModeIndicator';
 import ModeGuidancePanel from './ModeGuidancePanel';
+import CompactToolbar from './CompactToolbar';
 import GrammarLearningModule from '../grammar/GrammarLearningModule';
 import GrammarReferenceLibrary from '../grammar/GrammarReferenceLibrary';
 
@@ -74,8 +75,8 @@ const ChatPage = () => {
       </div>
       
       <div className="flex-1 flex flex-col p-2 md:p-4 relative z-10">
-        {/* 顶部标题栏 */}
-        <div className="flex items-center justify-between mb-3 md:mb-6">
+        {/* 顶部标题栏 - 紧凑型布局 */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2 md:space-x-3">
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-2 rounded-xl shadow-md">
               <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-white" />
@@ -85,25 +86,61 @@ const ChatPage = () => {
             </h1>
           </div>
           
-          {/* 用户信息和操作按钮 */}
+          {/* 用户信息和主要控制按钮 */}
           <div className="flex items-center space-x-2">
-            {/* 桌面端用户信息 */}
-            <div className="hidden md:flex items-center space-x-2 mr-2">
-              <div className="flex items-center space-x-2 px-3 py-2 bg-white/70 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm">
+            {/* 桌面端：用户信息 + 视图切换 + 设置 */}
+            <div className="hidden md:flex items-center space-x-3">
+              {/* 用户信息 */}
+              <div className="flex items-center space-x-2 px-3 py-1.5 bg-white/70 backdrop-blur-sm rounded-lg border border-white/30 shadow-sm">
                 <User className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-black">
+                <span className="text-sm font-medium text-slate-700">
                   {user?.username || '用户'}
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="text-slate-600 hover:text-red-600 hover:bg-white/50"
-                title="注销"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
+              
+              {/* 视图切换按钮 */}
+              <div className="flex bg-white/70 backdrop-blur-sm rounded-lg p-1 shadow-sm border border-white/30">
+                <Button
+                  variant={currentView === 'chat' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('chat')}
+                  className="flex items-center rounded-md px-3 py-1.5 text-sm"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1.5" />
+                  对话
+                </Button>
+                <Button
+                  variant={currentView === 'grammar' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('grammar')}
+                  className="flex items-center rounded-md px-3 py-1.5 text-sm"
+                >
+                  <BookOpen className="w-4 h-4 mr-1.5" />
+                  语法
+                </Button>
+              </div>
+              
+              {/* 设置和注销 */}
+              <div className="flex items-center space-x-1">
+                <SettingsDialog
+                  config={config}
+                  setConfig={setConfig}
+                  saveConfig={saveConfig}
+                  availableModels={availableModels}
+                  isLoadingModels={isLoadingModels}
+                  fetchModels={fetchModels}
+                  setDefaultModels={setDefaultModels}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={logout}
+                  className="text-slate-600 hover:text-red-600 hover:bg-white/50 p-2"
+                  title="注销"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             
             {/* 移动端仅显示设置按钮 */}
@@ -121,8 +158,8 @@ const ChatPage = () => {
           </div>
         </div>
 
-        {/* 移动端导航 */}
-        <div className="md:hidden mb-3">
+        {/* 移动端导航 - 优化间距 */}
+        <div className="md:hidden mb-2">
           {/* 移动端用户信息 */}
           <div className="flex items-center justify-between mb-2 px-2">
             <div className="flex items-center space-x-2">
@@ -142,8 +179,8 @@ const ChatPage = () => {
             </Button>
           </div>
           
-          {/* 当前模式指示器 */}
-          <div className="flex items-center justify-between mb-3 px-2">
+          {/* 当前模式指示器 - 简化 */}
+          <div className="flex items-center justify-between mb-2 px-2">
             <SimpleModeIndicator mode={currentMode} />
             <ModeSelector 
               currentMode={currentMode} 
@@ -152,12 +189,13 @@ const ChatPage = () => {
             />
           </div>
           
-          <div className="flex bg-white/70 backdrop-blur-sm rounded-2xl p-1 shadow-sm border border-white/30 mb-3">
+          {/* 视图切换 - 更紧凑 */}
+          <div className="flex bg-white/70 backdrop-blur-sm rounded-xl p-1 shadow-sm border border-white/30 mb-2">
             <Button
               variant={currentView === 'chat' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setCurrentView('chat')}
-              className="flex-1 flex items-center justify-center rounded-xl"
+              className="flex-1 flex items-center justify-center rounded-lg py-1.5"
             >
               <MessageSquare className="w-4 h-4 mr-1" />
               对话
@@ -166,110 +204,58 @@ const ChatPage = () => {
               variant={currentView === 'grammar' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setCurrentView('grammar')}
-              className="flex-1 flex items-center justify-center rounded-xl"
+              className="flex-1 flex items-center justify-center rounded-lg py-1.5"
             >
               <BookOpen className="w-4 h-4 mr-1" />
               语法
             </Button>
           </div>
-          <div className="flex space-x-2">
+          
+          {/* 工具按钮 - 紧凑布局 */}
+          <div className="flex space-x-1">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowGrammarReference(true)}
-              className="flex-1 flex items-center justify-center"
+              className="flex-1 flex items-center justify-center py-1.5 text-xs"
             >
-              <BookOpen className="w-4 h-4 mr-1" />
-              语法参考
+              <BookOpen className="w-3 h-3 mr-1" />
+              参考
             </Button>
             <NewChatButton 
               onNewChat={() => startNewConversation(currentMode, modeConfig)}
               disabled={isLoading}
               className="flex-1"
+              size="sm"
             />
             <ChatHistoryDialog
               onLoadConversation={loadConversationHistory}
               onDeleteConversation={handleDeleteConversation}
               className="flex-1"
+              size="sm"
             />
           </div>
         </div>
 
-        {/* 桌面端导航 */}
-        <div className="hidden md:flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            {/* 模式指示器 */}
-            <ModeIndicator mode={currentMode} size="default" showLabel={true} />
-            
-            {/* 模式选择器 */}
-            <ModeSelector 
-              currentMode={currentMode} 
-              onModeChange={handleModeChange}
-              disabled={isLoading}
-            />
-
-            {/* 视图切换按钮 */}
-            <div className="flex bg-white/70 backdrop-blur-sm rounded-2xl p-1 shadow-sm border border-white/30">
-              <Button
-                variant={currentView === 'chat' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrentView('chat')}
-                className="flex items-center rounded-xl"
-              >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                对话练习
-              </Button>
-              <Button
-                variant={currentView === 'grammar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrentView('grammar')}
-                className="flex items-center rounded-xl"
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                语法学习
-              </Button>
-            </div>
-
-            {/* 语法参考库按钮 */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowGrammarReference(true)}
-              className="flex items-center"
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              语法参考
-            </Button>
-
-            {/* 原有的按钮 */}
-            <NewChatButton 
-              onNewChat={() => startNewConversation(currentMode, modeConfig)}
-              disabled={isLoading}
-            />
-            <ChatHistoryDialog
-              onLoadConversation={loadConversationHistory}
-              onDeleteConversation={handleDeleteConversation}
-            />
-          </div>
-          <div>
-            <SettingsDialog
-              config={config}
-              setConfig={setConfig}
-              saveConfig={saveConfig}
-              availableModels={availableModels}
-              isLoadingModels={isLoadingModels}
-              fetchModels={fetchModels}
-              setDefaultModels={setDefaultModels}
-            />
-          </div>
+        {/* 桌面端简化导航 */}
+        <div className="hidden md:flex items-center justify-between mb-4">
+          <CompactToolbar
+            currentMode={currentMode}
+            onModeChange={handleModeChange}
+            onNewChat={() => startNewConversation(currentMode, modeConfig)}
+            onLoadConversation={loadConversationHistory}
+            onDeleteConversation={handleDeleteConversation}
+            onShowGrammarReference={() => setShowGrammarReference(true)}
+            isLoading={isLoading}
+          />
         </div>
 
         {/* 内容区域 */}
         <div className="flex-1 overflow-hidden">
           {currentView === 'chat' ? (
             <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden h-full">
-              {/* 模式指导面板 */}
-              <ModeGuidancePanel mode={currentMode} className="m-3" />
+              {/* 模式指导面板 - 紧凑布局 */}
+              <ModeGuidancePanel mode={currentMode} className="mx-3 mt-2 mb-1" />
               
               <MessageList
                 messages={messages}

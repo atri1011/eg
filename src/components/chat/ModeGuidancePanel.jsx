@@ -116,24 +116,26 @@ const MODE_GUIDANCE = {
 };
 
 const ModeGuidancePanel = ({ mode = 'free_chat', className = '' }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // 默认折叠以节省空间
   const guidance = MODE_GUIDANCE[mode] || MODE_GUIDANCE.free_chat;
   const IconComponent = guidance.icon;
 
   return (
     <Card className={`${className} bg-white/80 backdrop-blur-sm border-white/50`}>
       <div 
-        className="p-4 cursor-pointer"
+        className="px-4 py-2 cursor-pointer hover:bg-white/60 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${guidance.color} text-white`}>
-              <IconComponent className="w-4 h-4" />
+          <div className="flex items-center space-x-2">
+            <div className={`p-1.5 rounded-lg ${guidance.color} text-white`}>
+              <IconComponent className="w-3 h-3" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900">{guidance.title}</h3>
-              <p className="text-sm text-gray-500">点击查看使用指南</p>
+              <h3 className="text-sm font-medium text-gray-900">{guidance.title}</h3>
+              {!isExpanded && (
+                <p className="text-xs text-gray-500">点击展开使用指南</p>
+              )}
             </div>
           </div>
           {isExpanded ? (
