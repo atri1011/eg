@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { ChevronRight, BookOpen, Target, Award, ArrowLeft } from 'lucide-react';
-import { grammarCategories, getGrammarByLevel } from '../data/grammarData.js';
-import { useConfig } from '../hooks/useConfig.js';
+import { grammarCategories, getGrammarByLevel } from '../../data/grammarData.js';
+import { useConfig } from '../../hooks/useConfig.js';
 import GrammarDetailView from './GrammarDetailView.jsx';
-import GrammarPracticeView from './GrammarPracticeView.jsx';
-import PracticeSelectionView from './PracticeSelectionView.jsx';
+import GrammarPracticeView from '../practice/GrammarPracticeView.jsx';
+import PracticeSelectionView from '../practice/PracticeSelectionView.jsx';
 
 const GrammarLearningModule = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);

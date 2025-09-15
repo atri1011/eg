@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { MessageCircle, BookOpen, MessageSquare, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
-import { useConfig } from '../hooks/useConfig';
-import { useChat } from '../hooks/useChat';
-import { useWordQuery } from '../hooks/useWordQuery';
-import { useAuth } from '../hooks/useAuth.jsx';
-import SettingsDialog from './SettingsDialog';
+import { useConfig } from '../../hooks/useConfig';
+import { useChat } from '../../hooks/useChat';
+import { useWordQuery } from '../../hooks/useWordQuery';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import SettingsDialog from '../common/SettingsDialog';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import ChatHistoryDialog from './ChatHistoryDialog';
 import NewChatButton from './NewChatButton';
-import GrammarLearningModule from './GrammarLearningModule';
-import GrammarReferenceLibrary from './GrammarReferenceLibrary';
+import GrammarLearningModule from '../grammar/GrammarLearningModule';
+import GrammarReferenceLibrary from '../grammar/GrammarReferenceLibrary';
 
 const ChatPage = () => {
   const [currentView, setCurrentView] = useState('chat'); // 'chat' 或 'grammar'

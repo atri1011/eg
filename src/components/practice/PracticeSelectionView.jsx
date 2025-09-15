@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
 import { Label } from '@/components/ui/label.jsx';
 import { ArrowLeft, Target, BookOpen, Zap, Settings } from 'lucide-react';
-import { getExercisesByGrammarId } from '../data/grammarData.js';
+import { getExercisesByGrammarId } from '../../data/grammarData.js';
 
 const PracticeSelectionView = ({ grammarPoint, onBack, onStartPractice, config }) => {
   const [practiceType, setPracticeType] = useState(null);

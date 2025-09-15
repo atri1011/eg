@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { ArrowLeft, Target, CheckCircle, XCircle, RotateCcw, Trophy } from 'lucide-react';
-import { getExercisesByGrammarId } from '../data/grammarData.js';
+import { getExercisesByGrammarId } from '../../data/grammarData.js';
 
 const GrammarPracticeView = ({ grammarPoint, onBack, practiceData }) => {
   const [exercises, setExercises] = useState([]);

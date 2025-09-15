@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { History, MessageCircle, Trash2, Calendar } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth.jsx';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const ChatHistoryDialog = ({ onLoadConversation, onDeleteConversation, className }) => {
   const [isOpen, setIsOpen] = useState(false);

@@ -2,8 +2,8 @@ import React from 'react';
 import { AuthProvider, useAuth } from '@/hooks/useAuth.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { MessageCircle, Sparkles } from 'lucide-react';
-import ChatPage from './components/ChatPage';
-import AuthForm from './components/AuthForm';
+import ChatPage from './components/chat/ChatPage';
+import AuthForm from './components/common/AuthForm';
 
 const WelcomeScreen = ({ onStart }) => (
   <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-center p-4 relative overflow-hidden">

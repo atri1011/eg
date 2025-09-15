@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { Search, BookOpen, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import { grammarCategories, getAllGrammarPoints } from '../data/grammarData.js';
+import { grammarCategories, getAllGrammarPoints } from '../../data/grammarData.js';
 
 const GrammarReferenceLibrary = ({ isOpen, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');

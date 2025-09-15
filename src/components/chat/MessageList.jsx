@@ -3,8 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Sparkles, MessageCircle, Search } from 'lucide-react';
-import WordQueryDialog from './WordQueryDialog.jsx';
-import OptimizationPanel from './OptimizationPanel.jsx';
+import WordQueryDialog from '../common/WordQueryDialog.jsx';
+import OptimizationPanel from '../common/OptimizationPanel.jsx';
 
 // Function to render AI messages sentence by sentence with translation
 const renderSegmentedMessage = (content, translation) => {
