@@ -378,3 +378,78 @@
     }
   }
 }
+
+/* Highlight.js 代码高亮样式 */
+.hljs {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+}
+
+.hljs-keyword {
+  color: #569cd6 !important;
+}
+
+.hljs-string {
+  color: #ce9178 !important;
+}
+
+.hljs-comment {
+  color: #6a9955 !important;
+}
+
+.hljs-number {
+  color: #b5cea8 !important;
+}
+
+.hljs-function {
+  color: #dcdcaa !important;
+}
+
+.hljs-variable {
+  color: #9cdcfe !important;
+}
+
+.hljs-type {
+  color: #4ec9b0 !important;
+}
+
+.hljs-built_in {
+  color: #4fc1ff !important;
+}
+
+.hljs-title {
+  color: #dcdcaa !important;
+}
+
+.hljs-attr {
+  color: #92c5f8 !important;
+}
+
+.hljs-tag {
+  color: #569cd6 !important;
+}
+
+.hljs-name {
+  color: #569cd6 !important;
+}
+
+.hljs-attribute {
+  color: #92c5f8 !important;
+}
+
+/* Markdown 代码块样式增强 */
+.markdown-content pre {
+  @apply bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto my-4 text-sm;
+}
+
+.markdown-content code {
+  @apply font-mono text-sm;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent text-inherit p-0;
+}
+
+.markdown-content :not(pre) > code {
+  @apply bg-gray-100 text-red-600 px-1.5 py-0.5 rounded text-sm;
+}

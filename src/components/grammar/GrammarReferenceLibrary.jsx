@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.jsx';
 import { Search, BookOpen, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { grammarCategories, getAllGrammarPoints } from '../../data/grammarData.js';
+import EnhancedMarkdown from '../common/EnhancedMarkdown.jsx';
 
 const GrammarReferenceLibrary = ({ isOpen, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,7 +130,10 @@ const GrammarReferenceLibrary = ({ isOpen, onClose }) => {
                       <span className="text-2xl">{point.categoryIcon}</span>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-800">{point.name}</h3>
-                        <p className="text-sm text-gray-600">{point.description}</p>
+                        <EnhancedMarkdown 
+                          content={point.description} 
+                          className="text-sm text-gray-600 markdown-content"
+                        />
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -172,9 +176,10 @@ const GrammarReferenceLibrary = ({ isOpen, onClose }) => {
                               <div className="px-6 pb-4 space-y-3">
                                 {/* 规则内容 */}
                                 <div className="bg-blue-50 p-3 rounded-md">
-                                  <p className="text-gray-800 text-sm whitespace-pre-line">
-                                    {rule.content}
-                                  </p>
+                                  <EnhancedMarkdown 
+                                    content={rule.content} 
+                                    className="text-gray-800 text-sm whitespace-pre-line markdown-content"
+                                  />
                                 </div>
 
                                 {/* 例句 */}

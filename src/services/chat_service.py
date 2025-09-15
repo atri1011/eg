@@ -90,6 +90,12 @@ class ChatService:
         """
         从指定会话重新生成AI回复
         """
+        # 获取会话对象
+        from src.models.conversation import Conversation
+        conversation = Conversation.query.filter_by(id=conversation_id, user_id=user_id).first()
+        if not conversation:
+            raise Exception(f"Conversation {conversation_id} not found")
+        
         # 获取会话历史消息
         messages_history, error = ConversationService.get_messages_by_conversation_id(
             conversation_id, user_id)

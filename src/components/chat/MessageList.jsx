@@ -1,18 +1,19 @@
 import React, { useState, useCallback, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Sparkles, MessageCircle, Search, Edit3, Trash2, Save, X } from 'lucide-react';
 import WordQueryDialog from '../common/WordQueryDialog.jsx';
 import OptimizationPanel from '../common/OptimizationPanel.jsx';
+import EnhancedMarkdown from '../common/EnhancedMarkdown.jsx';
 
 // Function to render AI messages sentence by sentence with translation
 const renderSegmentedMessage = (content, translation) => {
   if (!translation) {
     return (
-      <div className="prose prose-sm max-w-none">
-        <ReactMarkdown>{content}</ReactMarkdown>
-      </div>
+      <EnhancedMarkdown 
+        content={content} 
+        className="markdown-content" 
+      />
     );
   }
 
@@ -59,8 +60,11 @@ const renderSegmentedMessage = (content, translation) => {
   
   if (chunks.length <= 1) {
     return (
-     <div className="prose prose-sm max-w-none">
-       <ReactMarkdown>{content}</ReactMarkdown>
+     <div>
+       <EnhancedMarkdown 
+         content={content} 
+         className="markdown-content" 
+       />
        {translation && (
           <div className="mt-1">
            <div className="translation-container">
@@ -76,9 +80,10 @@ const renderSegmentedMessage = (content, translation) => {
 
   return chunks.map((chunk, index) => (
     <div key={index} className="mb-2 last:mb-0">
-      <div className="prose prose-sm max-w-none">
-        <ReactMarkdown>{chunk.english}</ReactMarkdown>
-      </div>
+      <EnhancedMarkdown 
+        content={chunk.english} 
+        className="markdown-content" 
+      />
       {chunk.chinese && (
         <div className="mt-1">
           <div className="translation-container">
@@ -323,8 +328,12 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery, onEditM
                   {message.type === 'ai'
                     ? renderSegmentedMessage(message.content, message.translation)
                     : (
-                      <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message prose-invert' : ''}`}>
-                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      <div>
+                        <EnhancedMarkdown 
+                          content={message.content} 
+                          className="markdown-content" 
+                          isUserMessage={message.type === 'user'}
+                        />
                         {message.isEdited && (
                           <div className="text-xs text-gray-500 mt-1 italic">
                             已编辑

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import EnhancedMarkdown from './EnhancedMarkdown.jsx';
 
 const DiffText = ({ original, corrected, type = 'correction' }) => {
   const segments = useMemo(() => {
@@ -118,7 +119,10 @@ const CorrectionItem = ({ correction, index }) => {
       />
       
       <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-        {correction.explanation}
+        <EnhancedMarkdown 
+          content={correction.explanation} 
+          className="markdown-content text-xs"
+        />
       </div>
     </div>
   );

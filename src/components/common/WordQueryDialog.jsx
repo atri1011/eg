@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
+import EnhancedMarkdown from './EnhancedMarkdown.jsx';
 
 const WordQueryDialog = ({ 
   isOpen, 
@@ -286,9 +287,10 @@ const WordQueryDialog = ({
                     <h3 className="text-lg font-bold text-gray-800">翻译</h3>
                   </div>
                   <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                    <p className="text-gray-700 leading-relaxed">
-                      {analysisResult.translation || '暂无翻译'}
-                    </p>
+                    <EnhancedMarkdown 
+                      content={analysisResult.translation || '暂无翻译'} 
+                      className="text-gray-700 leading-relaxed markdown-content"
+                    />
                   </div>
                 </div>
 
@@ -299,9 +301,10 @@ const WordQueryDialog = ({
                     <h3 className="text-lg font-bold text-gray-800">语法解释</h3>
                   </div>
                   <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                      {analysisResult.grammar || '暂无语法解释'}
-                    </p>
+                    <EnhancedMarkdown 
+                      content={analysisResult.grammar || '暂无语法解释'} 
+                      className="text-gray-700 leading-relaxed whitespace-pre-wrap markdown-content"
+                    />
                   </div>
                 </div>
 
