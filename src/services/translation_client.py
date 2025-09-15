@@ -37,57 +37,57 @@ class TranslationClient:
         message_for_ai = user_message
         
         try:
-            # 使用线程池并行处理
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                futures = []
-                
-                # 1. 提交翻译/语法纠错任务
-                if self.is_chinese_text(user_message):
-                    # 提交翻译任务
-                    future_translation = executor.submit(
-                        self.translation_core.get_translation_from_chinese, 
-                        user_message
-                    )
-                    futures.append(("translation", future_translation))
+            # 如果是中文输入，需要先翻译，再优化翻译结果
+            if self.is_chinese_text(user_message):
+                # 1. 先进行翻译
+                translation_result = self.translation_core.get_translation_from_chinese(user_message)
+                if translation_result:
+                    grammar_correction_result = translation_result
+                    translated_text = translation_result.get("corrected_sentence", user_message)
+                    message_for_ai = translated_text
+                    
+                    # 2. 对翻译后的英文进行CET4优化
+                    optimization_result = self.cet4_optimization.optimize_for_cet4(translated_text)
                 else:
+                    # 翻译失败，尝试直接优化原文
+                    optimization_result = self.cet4_optimization.optimize_for_cet4(user_message)
+            else:
+                # 英文输入：并行处理语法纠错和优化
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    futures = []
+                    
                     # 提交语法纠错任务
                     future_grammar = executor.submit(
                         self.grammar_correction.get_detailed_corrections, 
                         user_message
                     )
                     futures.append(("grammar", future_grammar))
-                
-                # 2. 提交CET4优化任务
-                future_optimization = executor.submit(
-                    self.cet4_optimization.optimize_for_cet4, 
-                    user_message
-                )
-                futures.append(("optimization", future_optimization))
-                
-                # 3. 收集结果
-                for task_type, future in futures:
-                    try:
-                        result = future.result()
-                        if task_type == "translation" and result:
-                            grammar_correction_result = result
-                            message_for_ai = result.get("corrected_sentence", user_message)
-                        elif task_type == "grammar" and result:
-                            grammar_correction_result = result
-                            corrected = result.get("corrected_sentence", user_message)
-                            original = result.get("original_sentence", user_message)
-                            if corrected != original:
-                                message_for_ai = corrected
-                        elif task_type == "optimization" and result:
-                            optimization_result = result
-                            # 对于中文输入，优化结果仅用于展示，不覆盖翻译结果
-                            # 对于英文输入，优化结果可以用于AI对话
-                            if not self.is_chinese_text(user_message):
+                    
+                    # 提交CET4优化任务
+                    future_optimization = executor.submit(
+                        self.cet4_optimization.optimize_for_cet4, 
+                        user_message
+                    )
+                    futures.append(("optimization", future_optimization))
+                    
+                    # 收集结果
+                    for task_type, future in futures:
+                        try:
+                            result = future.result()
+                            if task_type == "grammar" and result:
+                                grammar_correction_result = result
+                                corrected = result.get("corrected_sentence", user_message)
+                                original = result.get("original_sentence", user_message)
+                                if corrected != original:
+                                    message_for_ai = corrected
+                            elif task_type == "optimization" and result:
+                                optimization_result = result
                                 message_for_ai = result.get("optimized_sentence", message_for_ai)
-                            
-                    except Exception as e:
-                        print(f"[ERROR] {task_type} 任务执行失败: {e}")
+                                
+                        except Exception as e:
+                            print(f"[ERROR] {task_type} 任务执行失败: {e}")
             
-            # 并行处理完成
+            # 处理完成
             return message_for_ai, grammar_correction_result, optimization_result
             
         except Exception as e:
@@ -108,68 +108,67 @@ class TranslationClient:
         context_info = self._build_context_info(conversation_history)
         
         try:
-            # 使用线程池并行处理
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                futures = []
-                
-                # 1. 提交翻译/语法纠错任务
-                if self.is_chinese_text(user_message):
-                    # 提交上下文翻译任务
-                    future_translation = executor.submit(
-                        self.translation_core.translate_with_context, 
-                        user_message, context_info
-                    )
-                    futures.append(("translation", future_translation))
+            # 如果是中文输入，需要先翻译，再优化翻译结果
+            if self.is_chinese_text(user_message):
+                # 1. 先进行上下文翻译
+                translated_text = self.translation_core.translate_with_context(user_message, context_info)
+                if translated_text and translated_text != user_message:
+                    # 包装翻译结果为纠错格式
+                    grammar_correction_result = {
+                        "original_sentence": user_message,
+                        "corrected_sentence": translated_text,
+                        "overall_comment": "中文翻译成功，已根据对话上下文优化",
+                        "corrections": [
+                            {
+                                "type": "translation",
+                                "original": user_message,
+                                "corrected": translated_text,
+                                "explanation": f"将中文句子 '{user_message}' 翻译成适合当前对话语境的英文"
+                            }
+                        ]
+                    }
+                    message_for_ai = translated_text
+                    
+                    # 2. 对翻译后的英文进行上下文感知CET4优化
+                    optimization_result = self.cet4_optimization.optimize_with_context(translated_text, context_info)
                 else:
+                    # 翻译失败，尝试直接优化原文
+                    optimization_result = self.cet4_optimization.optimize_with_context(user_message, context_info)
+            else:
+                # 英文输入：并行处理语法纠错和优化
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    futures = []
+                    
                     # 提交上下文语法纠错任务
                     future_grammar = executor.submit(
                         self.grammar_correction.get_context_aware_corrections, 
                         user_message, context_info
                     )
                     futures.append(("grammar", future_grammar))
-                
-                # 2. 提交上下文感知CET4优化任务
-                future_optimization = executor.submit(
-                    self.cet4_optimization.optimize_with_context, 
-                    user_message, context_info
-                )
-                futures.append(("optimization", future_optimization))
-                
-                # 3. 收集结果
-                for task_type, future in futures:
-                    try:
-                        result = future.result()
-                        if task_type == "translation" and result:
-                            # 翻译结果需要包装成纠错格式
-                            grammar_correction_result = {
-                                "original_sentence": user_message,
-                                "corrected_sentence": result,
-                                "overall_comment": "中文翻译成功，已根据对话上下文优化",
-                                "corrections": [
-                                    {
-                                        "type": "translation",
-                                        "original": user_message,
-                                        "corrected": result,
-                                        "explanation": f"将中文句子 '{user_message}' 翻译成适合当前对话语境的英文"
-                                    }
-                                ]
-                            }
-                            message_for_ai = result
-                        elif task_type == "grammar" and result:
-                            grammar_correction_result = result
-                            corrected = result.get("corrected_sentence", user_message)
-                            original = result.get("original_sentence", user_message)
-                            if corrected != original:
-                                message_for_ai = corrected
-                        elif task_type == "optimization" and result:
-                            optimization_result = result
-                            # 对于中文输入，优化结果仅用于展示，不覆盖翻译结果
-                            # 对于英文输入，优化结果可以用于AI对话
-                            if not self.is_chinese_text(user_message):
+                    
+                    # 提交上下文感知CET4优化任务
+                    future_optimization = executor.submit(
+                        self.cet4_optimization.optimize_with_context, 
+                        user_message, context_info
+                    )
+                    futures.append(("optimization", future_optimization))
+                    
+                    # 收集结果
+                    for task_type, future in futures:
+                        try:
+                            result = future.result()
+                            if task_type == "grammar" and result:
+                                grammar_correction_result = result
+                                corrected = result.get("corrected_sentence", user_message)
+                                original = result.get("original_sentence", user_message)
+                                if corrected != original:
+                                    message_for_ai = corrected
+                            elif task_type == "optimization" and result:
+                                optimization_result = result
                                 message_for_ai = result.get("optimized_sentence", message_for_ai)
-                            
-                    except Exception as e:
-                        print(f"[ERROR] {task_type} 任务执行失败: {e}")
+                                
+                        except Exception as e:
+                            print(f"[ERROR] {task_type} 任务执行失败: {e}")
             
             # 上下文感知处理完成
             return message_for_ai, grammar_correction_result, optimization_result

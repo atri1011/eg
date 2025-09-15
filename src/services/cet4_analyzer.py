@@ -48,7 +48,7 @@ class CET4Analyzer:
 
         try:
             response = requests.post(
-                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=20)
+                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=40)
             response.raise_for_status()
             result = response.json()
             content = result["choices"][0]["message"]["content"].strip()

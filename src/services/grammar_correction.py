@@ -80,7 +80,7 @@ class GrammarCorrection:
                 print(
                     f"[DEBUG] 发送详细修正请求到: {self.api_config.chat_completions_url} (尝试 {attempt + 1})")
                 response = requests.post(
-                    self.api_config.chat_completions_url, headers=headers, json=payload, timeout=20)
+                    self.api_config.chat_completions_url, headers=headers, json=payload, timeout=40)
 
                 if response.status_code == 429:
                     print(f"[WARN] 收到 429 速率限制错误。将在 {retry_delay} 秒后重试...")
@@ -198,7 +198,7 @@ class GrammarCorrection:
 
         try:
             response = requests.post(
-                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=20)
+                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=40)
             response.raise_for_status()
             result = response.json()
             content = result["choices"][0]["message"]["content"].strip()

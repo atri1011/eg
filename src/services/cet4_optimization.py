@@ -47,7 +47,7 @@ class CET4Optimization:
 
         try:
             response = requests.post(
-                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=15)
+                self.api_config.chat_completions_url, headers=headers, json=payload, timeout=30)
             response.raise_for_status()
             result = response.json()
             optimized_text = result["choices"][0]["message"]["content"].strip()
