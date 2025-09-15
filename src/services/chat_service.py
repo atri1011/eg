@@ -50,7 +50,7 @@ class ChatService:
             user_message, conversation_context)
 
         # 4. 保存用户消息
-        ConversationService.add_message(
+        user_message_obj = ConversationService.add_message(
             conversation_id=conversation.id,
             role='user',
             content=user_message,
@@ -71,7 +71,7 @@ class ChatService:
             messages_for_api, system_prompt)
 
         # 6. 保存AI回复
-        ConversationService.add_message(
+        ai_message_obj = ConversationService.add_message(
             conversation_id=conversation.id,
             role='assistant',
             content=ai_response_content
@@ -81,7 +81,38 @@ class ChatService:
             "response": ai_response_content,
             "grammar_corrections": grammar_correction_result,
             "optimization": optimization_result,
-            "conversation_id": conversation.id
+            "conversation_id": conversation.id,
+            "user_message_id": user_message_obj.id,
+            "ai_message_id": ai_message_obj.id
+        }
+
+    def regenerate_from_message(self, user_id: int, conversation_id: int, language_preference: str = 'en'):
+        """
+        从指定会话重新生成AI回复
+        """
+        # 获取会话历史消息
+        messages_history, error = ConversationService.get_messages_by_conversation_id(
+            conversation_id, user_id)
+        if error:
+            raise Exception(error)
+
+        # 构建消息历史用于AI请求
+        messages_for_api = [{"role": msg.role, "content": msg.content}
+                            for msg in messages_history]
+        system_prompt = build_system_prompt(language_preference)
+        ai_response_content = self._send_chat_request(
+            messages_for_api, system_prompt)
+
+        # 保存AI回复
+        ai_message_obj = ConversationService.add_message(
+            conversation_id=conversation_id,
+            role='assistant',
+            content=ai_response_content
+        )
+
+        return {
+            "response": ai_response_content,
+            "ai_message_id": ai_message_obj.id
         }
 
     def _send_chat_request(self, messages: List[Dict], system_prompt: str) -> str:

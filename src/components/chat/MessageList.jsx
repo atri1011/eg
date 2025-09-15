@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Sparkles, MessageCircle, Search } from 'lucide-react';
+import { Sparkles, MessageCircle, Search, Edit3, Trash2, Save, X } from 'lucide-react';
 import WordQueryDialog from '../common/WordQueryDialog.jsx';
 import OptimizationPanel from '../common/OptimizationPanel.jsx';
 
@@ -92,12 +92,15 @@ const renderSegmentedMessage = (content, translation) => {
   ));
 };
 
-const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
+const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery, onEditMessage, onDeleteMessage }) => {
   const [selectedText, setSelectedText] = useState('');
   const [selectionPosition, setSelectionPosition] = useState({ x: 0, y: 0 });
   const [showQueryButton, setShowQueryButton] = useState(false);
   const [showWordDialog, setShowWordDialog] = useState(false);
   const [selectedContext, setSelectedContext] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [hoveredMessageId, setHoveredMessageId] = useState(null);
   const selectionTimeoutRef = useRef(null);
 
   // 检测选中的文本是否为英文单词或词组
@@ -194,6 +197,46 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
     setSelectedContext('');
   }, []);
 
+  // 开始编辑消息
+  const handleStartEdit = useCallback((messageId, content) => {
+    setEditingMessageId(messageId);
+    setEditingContent(content);
+  }, []);
+
+  // 取消编辑
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setEditingContent('');
+  }, []);
+
+  // 保存编辑
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingContent.trim() || !editingMessageId) return;
+    
+    const success = await onEditMessage(editingMessageId, editingContent);
+    if (success) {
+      setEditingMessageId(null);
+      setEditingContent('');
+    }
+  }, [editingMessageId, editingContent, onEditMessage]);
+
+  // 删除消息
+  const handleDeleteMessage = useCallback(async (messageId) => {
+    if (window.confirm('确定要删除这条消息吗？')) {
+      await onDeleteMessage(messageId);
+    }
+  }, [onDeleteMessage]);
+
+  // 处理编辑输入框的键盘事件
+  const handleEditKeyPress = useCallback((e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  }, [handleSaveEdit, handleCancelEdit]);
+
   return (
     <div 
       className="flex-1 p-3 md:p-6 overflow-y-auto space-y-4 mobile-scroll selectable-text" 
@@ -208,25 +251,94 @@ const MessageList = ({ messages, isLoading, messagesEndRef, onWordQuery }) => {
       ) : (
         messages.map((message) => (
           <div key={message.id} className={`flex flex-col ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
-            <div className={`max-w-[85%] md:max-w-xs lg:max-w-xl px-4 py-3 ${
-              message.type === 'user'
-                ? 'bg-gray-200 text-black rounded-2xl'
-                : message.type === 'error'
-                ? 'bg-red-100 text-red-800 border border-red-200 rounded-lg'
-                : 'bg-white text-gray-800 border border-gray-200 rounded-lg'
-              }`}>
-              {message.type === 'ai'
-                ? renderSegmentedMessage(message.content, message.translation)
-                : (
-                  <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message prose-invert' : ''}`}>
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
+            <div 
+              className={`max-w-[85%] md:max-w-xs lg:max-w-xl px-4 py-3 relative group ${
+                message.type === 'user'
+                  ? 'bg-gray-200 text-black rounded-2xl'
+                  : message.type === 'error'
+                  ? 'bg-red-100 text-red-800 border border-red-200 rounded-lg'
+                  : 'bg-white text-gray-800 border border-gray-200 rounded-lg'
+                }`}
+              onMouseEnter={() => setHoveredMessageId(message.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
+            >
+              {/* 用户消息编辑和删除按钮 */}
+              {message.type === 'user' && hoveredMessageId === message.id && editingMessageId !== message.id && (
+                <div className="absolute -top-2 -right-2 flex space-x-1 bg-white rounded-lg shadow-md border p-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleStartEdit(message.id, message.content)}
+                    className="h-6 w-6 p-0 hover:bg-blue-100 hover:text-blue-600"
+                    title="编辑消息"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDeleteMessage(message.id)}
+                    className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                    title="删除消息"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+
+              {/* 编辑模式 */}
+              {editingMessageId === message.id ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editingContent}
+                    onChange={(e) => setEditingContent(e.target.value)}
+                    onKeyDown={handleEditKeyPress}
+                    className="w-full p-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows="3"
+                    autoFocus
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCancelEdit}
+                      className="px-3 py-1 text-xs"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      取消
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveEdit}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      保存
+                    </Button>
                   </div>
-                )
-              }
+                </div>
+              ) : (
+                /* 正常消息显示 */
+                <>
+                  {message.type === 'ai'
+                    ? renderSegmentedMessage(message.content, message.translation)
+                    : (
+                      <div className={`prose prose-sm max-w-none ${message.type === 'user' ? 'prose-user-message prose-invert' : ''}`}>
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                        {message.isEdited && (
+                          <div className="text-xs text-gray-500 mt-1 italic">
+                            已编辑
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+                </>
+              )}
             </div>
 
             {/* 优化面板显示 */}
-            {message.type === 'user' && (message.corrections || message.optimization) && (
+            {message.type === 'user' && (message.corrections || message.optimization) && editingMessageId !== message.id && (
               <OptimizationPanel
                 corrections={message.corrections}
                 optimization={message.optimization}

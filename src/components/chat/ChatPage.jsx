@@ -41,6 +41,8 @@ const ChatPage = () => {
     currentConversationId,
     loadConversationHistory,
     startNewConversation,
+    editMessage,
+    deleteMessage,
   } = useChat(config);
 
   const { queryWord } = useWordQuery(config);
@@ -241,6 +243,8 @@ const ChatPage = () => {
                 isLoading={isLoading}
                 messagesEndRef={messagesEndRef}
                 onWordQuery={queryWord}
+                onEditMessage={editMessage}
+                onDeleteMessage={deleteMessage}
               />
               <ChatInput
                 inputText={inputText}

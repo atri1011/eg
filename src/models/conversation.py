@@ -28,6 +28,8 @@ class Message(db.Model):
     corrections = db.Column(db.JSON, nullable=True)
     optimization = db.Column(db.JSON, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False)
 
     def to_dict(self):
         return {
@@ -37,5 +39,7 @@ class Message(db.Model):
             'content': self.content,
             'corrections': self.corrections,
             'optimization': self.optimization,
-            'created_at': self.created_at.isoformat()
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'is_deleted': self.is_deleted
         }

@@ -11,7 +11,9 @@ export const useChat = (config) => {
   const { getAuthHeaders } = useAuth();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -109,7 +111,7 @@ export const useChat = (config) => {
         const { english, chinese } = parseAIResponse(data.response);
         
         const aiMessage = {
-          id: Date.now() + 1,
+          id: data.ai_message_id,
           type: 'ai',
           content: english,
           translation: chinese,
@@ -121,6 +123,7 @@ export const useChat = (config) => {
             msg.id === userMessage.id 
               ? { 
                   ...msg, 
+                  id: data.user_message_id, // 使用真实的数据库ID
                   corrections: data.grammar_corrections,
                   optimization: data.optimization
                 }
@@ -164,6 +167,110 @@ export const useChat = (config) => {
     }
   };
 
+  const editMessage = async (messageId, newContent) => {
+    if (!newContent.trim()) return;
+
+    if (!config.apiKey) {
+      alert('请先在设置中配置API密钥');
+      return false;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}/regenerate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          content: newContent.trim(),
+          config: {
+            ...config,
+            model: config.customModel.trim() || config.model
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const { english, chinese } = parseAIResponse(data.response);
+        
+        const aiMessage = {
+          id: data.ai_message_id,
+          type: 'ai',
+          content: english,
+          translation: chinese,
+          timestamp: new Date().toLocaleTimeString()
+        };
+
+        // 更新消息列表：编辑的消息 + 新的AI回复
+        setMessages(currentMessages => {
+          const messageIndex = currentMessages.findIndex(msg => msg.id === messageId);
+          if (messageIndex === -1) return currentMessages;
+
+          const updatedMessages = [...currentMessages];
+          
+          // 更新编辑的消息
+          updatedMessages[messageIndex] = { 
+            ...updatedMessages[messageIndex], 
+            content: newContent.trim(), 
+            isEdited: true 
+          };
+
+          // 移除编辑消息之后的所有消息，然后添加新的AI回复
+          const messagesUpToEdited = updatedMessages.slice(0, messageIndex + 1);
+          
+          return [...messagesUpToEdited, aiMessage];
+        });
+
+        return true;
+      } else {
+        console.error('编辑消息失败:', data.error);
+        alert(data.error || '编辑消息失败');
+        return false;
+      }
+    } catch (error) {
+      console.error('编辑消息网络错误:', error);
+      alert('网络错误，无法编辑消息');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteMessage = async (messageId) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 从本地状态中移除消息
+        setMessages(currentMessages => 
+          currentMessages.filter(msg => msg.id !== messageId)
+        );
+        return true;
+      } else {
+        console.error('删除消息失败:', data.error);
+        alert(data.error || '删除消息失败');
+        return false;
+      }
+    } catch (error) {
+      console.error('删除消息网络错误:', error);
+      alert('网络错误，无法删除消息');
+      return false;
+    }
+  };
+
   return {
     messages,
     inputText,
@@ -176,5 +283,7 @@ export const useChat = (config) => {
     currentConversationId,
     loadConversationHistory,
     startNewConversation,
+    editMessage,
+    deleteMessage,
   };
 };
