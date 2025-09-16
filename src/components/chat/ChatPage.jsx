@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageCircle, BookOpen, MessageSquare, User, LogOut } from 'lucide-react';
+import { MessageCircle, BookOpen, MessageSquare, User, LogOut, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useConfig } from '../../hooks/useConfig';
 import { useChat } from '../../hooks/useChat';
@@ -12,7 +12,6 @@ import ChatHistoryDialog from './ChatHistoryDialog';
 import NewChatButton from './NewChatButton';
 import ModeSelector from './ModeSelector';
 import ModeIndicator, { SimpleModeIndicator } from './ModeIndicator';
-import CompactToolbar from './CompactToolbar';
 import GrammarLearningModule from '../grammar/GrammarLearningModule';
 import GrammarReferenceLibrary from '../grammar/GrammarReferenceLibrary';
 
@@ -89,38 +88,69 @@ const ChatPage = () => {
           <div className="flex items-center space-x-2">
             {/* 桌面端：用户信息 + 视图切换 + 设置 */}
             <div className="hidden md:flex items-center space-x-3">
-              {/* 用户信息 */}
-              <div className="flex items-center space-x-2 px-3 py-1.5 bg-white/70 backdrop-blur-sm rounded-lg border border-white/30 shadow-sm">
-                <User className="w-4 h-4 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700">
-                  {user?.username || '用户'}
-                </span>
+            {/* 模式选择 */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 px-2 py-1 bg-white/50 backdrop-blur-sm rounded-lg border border-white/20">
+                  <Zap className="w-4 h-4 text-blue-600" />
+                  <ModeSelector
+                    currentMode={currentMode}
+                    onModeChange={handleModeChange}
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-              
-              {/* 视图切换按钮 */}
-              <div className="flex bg-white/70 backdrop-blur-sm rounded-lg p-1 shadow-sm border border-white/30">
+
+              {/* 主要工具按钮 */}
+              <div className="flex items-center space-x-1 border-l border-slate-200/80 ml-3 pl-3">
+                <NewChatButton
+                  onNewChat={() => startNewConversation(currentMode, modeConfig)}
+                  disabled={isLoading}
+                  size="sm"
+                />
                 <Button
                   variant={currentView === 'chat' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setCurrentView('chat')}
-                  className="flex items-center rounded-md px-3 py-1.5 text-sm"
+                  className="flex items-center px-3 py-1.5 text-sm"
+                  title="对话视图"
                 >
                   <MessageSquare className="w-4 h-4 mr-1.5" />
                   对话
+                </Button>
+                <ChatHistoryDialog
+                  onLoadConversation={loadConversationHistory}
+                  onDeleteConversation={handleDeleteConversation}
+                  size="sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowGrammarReference(true)}
+                  className="px-2 py-1 bg-white/50 backdrop-blur-sm rounded-md border border-white/20 hover:bg-white/70"
+                  title="语法参考"
+                >
+                  <BookOpen className="w-4 h-4" />
                 </Button>
                 <Button
                   variant={currentView === 'grammar' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setCurrentView('grammar')}
-                  className="flex items-center rounded-md px-3 py-1.5 text-sm"
+                  className="px-2 py-1"
+                  title="语法视图"
                 >
-                  <BookOpen className="w-4 h-4 mr-1.5" />
-                  语法
+                  <BookOpen className="w-4 h-4" />
                 </Button>
               </div>
               
               {/* 设置和注销 */}
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 border-l border-slate-200/80 ml-3 pl-3">
+                {/* 用户信息 */}
+                <div className="flex items-center space-x-2 px-3 py-1.5 bg-white/70 backdrop-blur-sm rounded-lg border border-white/30 shadow-sm">
+                  <User className="w-4 h-4 text-slate-600" />
+                  <span className="text-sm font-medium text-slate-700">
+                    {user?.username || '用户'}
+                  </span>
+                </div>
                 <SettingsDialog
                   config={config}
                   setConfig={setConfig}
@@ -236,21 +266,8 @@ const ChatPage = () => {
           </div>
         </div>
 
-        {/* 桌面端简化导航 */}
-        <div className="hidden md:flex items-center justify-between mb-4">
-          <CompactToolbar
-            currentMode={currentMode}
-            onModeChange={handleModeChange}
-            onNewChat={() => startNewConversation(currentMode, modeConfig)}
-            onLoadConversation={loadConversationHistory}
-            onDeleteConversation={handleDeleteConversation}
-            onShowGrammarReference={() => setShowGrammarReference(true)}
-            isLoading={isLoading}
-          />
-        </div>
-
         {/* 内容区域 */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden pt-4">
           {currentView === 'chat' ? (
             <div className="flex-1 flex flex-col bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden h-full">
               <MessageList
