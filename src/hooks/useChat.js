@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './useAuth.jsx';
 
-export const useChat = (config) => {
+export const useChat = (config, isConfigValid) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -77,10 +77,12 @@ export const useChat = (config) => {
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
 
-    if (!config.apiKey) {
-      // This should be handled by the UI component, e.g., opening the settings dialog.
-      // We can't directly open the dialog from the hook.
-      // For now, we'll just prevent sending the message.
+    // 使用 isConfigValid 函数来检查配置是否有效
+    if (isConfigValid && !isConfigValid()) {
+      alert('Please configure your API key in the settings.');
+      return;
+    } else if (!isConfigValid && !config.apiKey) {
+      // 向后兼容：如果没有传入 isConfigValid 函数，使用原来的检查方式
       alert('Please configure your API key in the settings.');
       return;
     }
@@ -183,7 +185,12 @@ export const useChat = (config) => {
   const editMessage = async (messageId, newContent) => {
     if (!newContent.trim()) return;
 
-    if (!config.apiKey) {
+    // 使用 isConfigValid 函数来检查配置是否有效
+    if (isConfigValid && !isConfigValid()) {
+      alert('请先在设置中配置API密钥');
+      return false;
+    } else if (!isConfigValid && !config.apiKey) {
+      // 向后兼容：如果没有传入 isConfigValid 函数，使用原来的检查方式
       alert('请先在设置中配置API密钥');
       return false;
     }

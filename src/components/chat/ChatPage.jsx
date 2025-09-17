@@ -50,7 +50,7 @@ const ChatPage = () => {
     startNewConversation,
     editMessage,
     deleteMessage,
-  } = useChat(config);
+  } = useChat(config, isConfigValid);
 
   const { queryWord } = useWordQuery(config);
 
