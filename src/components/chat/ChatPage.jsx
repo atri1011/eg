@@ -28,7 +28,9 @@ const ChatPage = () => {
     availableModels, 
     isLoadingModels, 
     fetchModels,
-    setDefaultModels
+    setDefaultModels,
+    hasServerDefaults,
+    isConfigValid
   } = useConfig();
   
   const {
@@ -159,6 +161,8 @@ const ChatPage = () => {
                   isLoadingModels={isLoadingModels}
                   fetchModels={fetchModels}
                   setDefaultModels={setDefaultModels}
+                  hasServerDefaults={hasServerDefaults}
+                  isConfigValid={isConfigValid}
                 />
                 <Button
                   variant="ghost"
@@ -182,6 +186,8 @@ const ChatPage = () => {
                 isLoadingModels={isLoadingModels}
                 fetchModels={fetchModels}
                 setDefaultModels={setDefaultModels}
+                hasServerDefaults={hasServerDefaults}
+                isConfigValid={isConfigValid}
               />
             </div>
           </div>

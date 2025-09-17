@@ -10,8 +10,12 @@ export const useConfig = () => {
   });
   const [availableModels, setAvailableModels] = useState([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [hasServerDefaults, setHasServerDefaults] = useState(false);
 
   useEffect(() => {
+    // 首先检查服务器是否有默认配置
+    checkServerDefaults();
+    
     const savedConfig = localStorage.getItem('aiEnglishConfig');
     if (savedConfig) {
       const parsedConfig = JSON.parse(savedConfig);
@@ -29,6 +33,30 @@ export const useConfig = () => {
       setDefaultModels('https://api.openai.com/v1');
     }
   }, []);
+
+  const checkServerDefaults = async () => {
+    try {
+      const response = await fetch('/api/config/server-defaults');
+      const data = await response.json();
+      
+      if (data.success && data.has_default_config) {
+        setHasServerDefaults(true);
+      }
+    } catch (error) {
+      console.log('无法检查服务器默认配置:', error);
+      // 不显示错误，静默处理
+    }
+  };
+
+  const isConfigValid = () => {
+    // 如果服务器有默认配置，则始终认为配置有效
+    if (hasServerDefaults) {
+      return true;
+    }
+    
+    // 否则检查用户配置
+    return config.apiKey && config.apiBase && config.model;
+  };
 
   const setDefaultModels = (apiBase = 'https://api.openai.com/v1') => {
     // 根据API Base URL设置默认模型列表
@@ -121,5 +149,7 @@ export const useConfig = () => {
     isLoadingModels,
     fetchModels,
     setDefaultModels,
+    hasServerDefaults,
+    isConfigValid,
   };
 };

@@ -3,7 +3,7 @@ from src.utils.decorators import auth_required
 from src.utils.auth import get_current_user
 from src.services.chat_service import ChatService
 from src.services.conversation_service import ConversationService
-from src.config.api_config import ApiConfig
+from src.config.api_config import ApiConfig, ApiConfigFactory
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,14 +29,23 @@ def chat():
     model = config.get("model")
     language_preference = config.get("languagePreference")
 
-    if not api_key or not api_base or not model:
-        return jsonify({"success": False, "error": "API Key, Base URL, or Model is missing."}), 400
+    # 尝试从用户配置创建API配置
+    api_config = None
+    if api_key and api_base and model:
+        # 用户提供了完整配置
+        api_config = ApiConfig(api_base=api_base, api_key=api_key, model=model)
+    else:
+        # 用户配置不完整，尝试使用环境变量
+        env_config = ApiConfigFactory.get_env_config_safe()
+        if env_config:
+            api_config = env_config
+            logger.info("使用环境变量配置")
+        else:
+            return jsonify({"success": False, "error": "API Key, Base URL, or Model is missing."}), 400
 
     current_user = get_current_user()
 
     try:
-        # 创建API配置对象
-        api_config = ApiConfig(api_base=api_base, api_key=api_key, model=model)
         chat_service = ChatService(api_config)
         result = chat_service.process_chat_message(
             user_id=current_user.id,
@@ -190,8 +199,19 @@ def regenerate_from_message(message_id):
     model = config.get("model")
     language_preference = config.get("languagePreference")
 
-    if not api_key or not api_base or not model:
-        return jsonify({"success": False, "error": "API Key, Base URL, or Model is missing."}), 400
+    # 尝试从用户配置创建API配置
+    api_config = None
+    if api_key and api_base and model:
+        # 用户提供了完整配置
+        api_config = ApiConfig(api_base=api_base, api_key=api_key, model=model)
+    else:
+        # 用户配置不完整，尝试使用环境变量
+        env_config = ApiConfigFactory.get_env_config_safe()
+        if env_config:
+            api_config = env_config
+            logger.info("使用环境变量配置")
+        else:
+            return jsonify({"success": False, "error": "API Key, Base URL, or Model is missing."}), 400
 
     current_user = get_current_user()
     
@@ -210,8 +230,6 @@ def regenerate_from_message(message_id):
         ConversationService.delete_messages_after(message_id, current_user.id)
         
         # 重新生成AI回复
-        from src.config.api_config import ApiConfig
-        api_config = ApiConfig(api_base=api_base, api_key=api_key, model=model)
         chat_service = ChatService(api_config)
         result = chat_service.regenerate_from_message(
             user_id=current_user.id,
@@ -227,3 +245,20 @@ def regenerate_from_message(message_id):
     except Exception as e:
         logger.error(f"Failed to regenerate from message {message_id}: {e}")
         return jsonify({"success": False, "error": f"Internal server error: {str(e)}"}), 500
+
+
+@chat_bp.route("/config/server-defaults", methods=["GET"])
+def get_server_defaults():
+    """获取服务器默认配置状态"""
+    try:
+        has_default_config = ApiConfigFactory.has_env_config()
+        
+        # 返回配置状态，不暴露具体的配置值
+        return jsonify({
+            "success": True,
+            "has_default_config": has_default_config,
+            "message": "服务器已配置默认AI设置" if has_default_config else "需要用户配置AI设置"
+        })
+    except Exception as e:
+        logger.error(f"Failed to get server defaults: {e}")
+        return jsonify({"success": False, "error": "Failed to check server configuration."}), 500

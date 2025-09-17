@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { Settings, RefreshCw } from 'lucide-react';
 
-const SettingsDialog = ({ config, setConfig, saveConfig, availableModels, isLoadingModels, fetchModels, setDefaultModels }) => {
+const SettingsDialog = ({ config, setConfig, saveConfig, availableModels, isLoadingModels, fetchModels, setDefaultModels, hasServerDefaults, isConfigValid }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleApiBaseChange = (newApiBase) => {
@@ -41,6 +41,13 @@ const SettingsDialog = ({ config, setConfig, saveConfig, availableModels, isLoad
             <TabsTrigger value="chat">对话设置</TabsTrigger>
           </TabsList>
           <TabsContent value="api" className="space-y-4">
+            {hasServerDefaults && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                <p className="text-sm text-green-800">
+                  ✓ 服务器已配置默认AI设置，您可以直接使用，也可以自定义覆盖默认配置。
+                </p>
+              </div>
+            )}
             <div>
               <Label htmlFor="apiBase">API Base URL</Label>
               <Input

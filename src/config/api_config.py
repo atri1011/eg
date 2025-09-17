@@ -86,11 +86,63 @@ class ApiConfigFactory:
     def from_env() -> ApiConfig:
         """从环境变量创建API配置"""
         import os
-        return ApiConfig(
-            api_base=os.getenv('API_BASE', ''),
-            api_key=os.getenv('API_KEY', ''),
-            model=os.getenv('MODEL', 'gpt-3.5-turbo')
+        
+        # 按优先级获取环境变量
+        api_base = (
+            os.getenv('DEFAULT_API_BASE') or 
+            os.getenv('API_BASE') or 
+            ''
         )
+        
+        api_key = (
+            os.getenv('DEFAULT_API_KEY') or 
+            os.getenv('API_KEY') or 
+            os.getenv('OPENAI_API_KEY') or 
+            ''
+        )
+        
+        model = (
+            os.getenv('DEFAULT_MODEL') or 
+            os.getenv('MODEL') or 
+            'gpt-3.5-turbo'
+        )
+        
+        return ApiConfig(
+            api_base=api_base,
+            api_key=api_key,
+            model=model
+        )
+    
+    @staticmethod
+    def has_env_config() -> bool:
+        """检查是否配置了有效的环境变量"""
+        import os
+        
+        api_base = (
+            os.getenv('DEFAULT_API_BASE') or 
+            os.getenv('API_BASE') or 
+            ''
+        )
+        
+        api_key = (
+            os.getenv('DEFAULT_API_KEY') or 
+            os.getenv('API_KEY') or 
+            os.getenv('OPENAI_API_KEY') or 
+            ''
+        )
+        
+        # 只要有api_base和api_key就认为有有效配置
+        return bool(api_base and api_key)
+    
+    @staticmethod
+    def get_env_config_safe() -> Optional['ApiConfig']:
+        """安全地从环境变量获取配置，如果无效则返回None"""
+        try:
+            if ApiConfigFactory.has_env_config():
+                return ApiConfigFactory.from_env()
+        except ValueError:
+            logger.warning("环境变量配置无效")
+        return None
     
     @staticmethod
     def create_default() -> ApiConfig:
