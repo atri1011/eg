@@ -253,13 +253,9 @@ const OptimizationPanel = ({ corrections, optimization }) => {
                     </div>
                     
                     <div>
-                      <label className="text-xs font-medium text-gray-600 mb-1 block">差异对比：</label>
-                      <div className="bg-gray-50 p-2 rounded">
-                        <DiffText 
-                          original={optimization.original_sentence} 
-                          corrected={optimization.optimized_sentence}
-                          type="optimization"
-                        />
+                      <label className="text-xs font-medium text-gray-600 mb-1 block">优化原因：</label>
+                      <div className="bg-blue-50 p-2 rounded text-sm text-gray-700">
+                        {optimization.optimization_reason || '通过改进词汇选择、句式结构和表达方式，提升语言的准确性和表达的流畅度，使句子更符合四级写作的评分标准。'}
                       </div>
                     </div>
 
