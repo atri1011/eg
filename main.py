@@ -164,4 +164,6 @@ create_tables_and_default_user()
 if __name__ == '__main__':
     # 只在直接运行时使用（开发环境）
     port = int(os.environ.get('PORT', 5001))
+    print(f"🌐 服务器启动在: http://0.0.0.0:{port}")
+    print(f"📱 手机访问地址: http://{os.popen('hostname -I').read().strip()}:{port}")
     app.run(debug=not IS_PRODUCTION, host='0.0.0.0', port=port)
